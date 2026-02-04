@@ -1,55 +1,102 @@
-<MudPaper Elevation="0" Class="mt-6 pt-4 pb-3 px-6" Style="background-color:#f5f5f5; border-top:1px solid #e0e0e0;">
-    <MudGrid>
-        <MudItem xs="12" md="4">
-            <MudText Typo="Typo.subtitle2" Style="font-weight:600;">
-                Онлайн-страхование
-            </MudText>
-            <MudText Typo="Typo.body2" Class="mt-1">
-                Оформляйте страховые продукты онлайн в любое время суток.
-            </MudText>
-        </MudItem>
+<MudPaper Elevation="0" Class="mt-auto" Style="background-color: #4a5568; color: white;">
+    <MudContainer MaxWidth="MaxWidth.Large" Class="py-8">
+        <MudGrid>
+            <!-- Левая колонка - Меню -->
+            <MudItem xs="12" md="3">
+                <MudStack Spacing="2">
+                    <MudLink Href="#" Typo="Typo.body2" Color="Color.Inherit">Вопрос-ответ</MudLink>
+                    <MudLink Href="#" Typo="Typo.body2" Color="Color.Inherit">Правила страхования</MudLink>
+                    <MudLink Href="#" Typo="Typo.body2" Color="Color.Inherit">Обработка персональных данных</MudLink>
+                    <MudLink Href="#" Typo="Typo.body2" Color="Color.Inherit">Калькулятор страховых услуг</MudLink>
+                    <MudLink Href="#" Typo="Typo.body2" Color="Color.Inherit">Онлайн-услуги</MudLink>
+                    <MudLink Href="#" Typo="Typo.body2" Color="Color.Inherit">Раскрытие информации</MudLink>
+                    <MudLink Href="#" Typo="Typo.body2" Color="Color.Inherit">Блог</MudLink>
+                    <MudLink Href="#" Typo="Typo.body2" Color="Color.Inherit">Контакты</MudLink>
+                    <MudLink Href="#" Typo="Typo.body2" Color="Color.Inherit">COVID</MudLink>
+                    <MudLink Href="#" Typo="Typo.body2" Color="Color.Inherit">Настройки Cookie</MudLink>
+                </MudStack>
+            </MudItem>
 
-        <MudItem xs="12" md="4">
-            <MudText Typo="Typo.subtitle2" Style="font-weight:600;">
-                Контакты
+            <!-- Средняя колонка - Контакты -->
+            <MudItem xs="12" md="5">
+                <MudStack Spacing="3">
+                    <!-- Страхование -->
+                    <div>
+                        <MudText Typo="Typo.body2" Style="color: #9ca3af; margin-bottom: 4px;">Страхование</MudText>
+                        <MudText Typo="Typo.body1" Style="color: white; font-weight: 500;">+375 (44) 111-11-11</MudText>
+                    </div>
+
+                    <!-- Страховой случай (здоровье) -->
+                    <div>
+                        <MudText Typo="Typo.body2" Style="color: #9ca3af; margin-bottom: 4px;">Страховой случай (здоровье)</MudText>
+                        <MudText Typo="Typo.body1" Style="color: white; font-weight: 500;">+375 (29) 111-11-11</MudText>
+                    </div>
+
+                    <!-- Страховой случай (КАСКО, имущество) -->
+                    <div>
+                        <MudText Typo="Typo.body2" Style="color: #9ca3af; margin-bottom: 4px;">Страховой случай (КАСКО, имущество)</MudText>
+                        <MudText Typo="Typo.body1" Style="color: white; font-weight: 500;">+375 (17) 111-11-11</MudText>
+                    </div>
+
+                    <!-- Техподдержка -->
+                    <div>
+                        <MudText Typo="Typo.body2" Style="color: #9ca3af; margin-bottom: 4px;">Служба технической поддержки клиентов</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Inherit">
+                            email: <MudLink Href="mailto:info@incurance.by" Color="Color.Inherit">info@incurance.by</MudLink>
+                        </MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Inherit">
+                            тел.: +375 (44) 111 11 11
+                        </MudText>
+                    </div>
+                </MudStack>
+            </MudItem>
+
+            <!-- Правая колонка - Соцсети и платежи -->
+            <MudItem xs="12" md="4">
+                <MudStack Spacing="3">
+                    <!-- Социальные сети -->
+                    <MudStack Row Spacing="2">
+                        <MudIconButton Icon="@Icons.Custom.Brands.Instagram" Style="color: white;" Size="Size.Medium" />
+                        <MudIconButton Icon="@Icons.Custom.Brands.Facebook" Style="color: white;" Size="Size.Medium" />
+                        <MudIconButton Icon="@Icons.Custom.Brands.YouTube" Style="color: white;" Size="Size.Medium" />
+                        <MudIconButton Icon="@Icons.Custom.Brands.TikTok" Style="color: white;" Size="Size.Medium" />
+                    </MudStack>
+
+                    <!-- Платежные системы -->
+                    <MudStack Row Spacing="1" AlignItems="AlignItems.Center">
+                        <MudImage Src="/images/mastercard_logo.png" Alt="Mastercard" Height="30" Style="background: white; padding: 4px; border-radius: 4px;" />
+                        <MudImage Src="/images/visa_logo.png" Alt="Visa" Height="30" Style="background: white; padding: 4px; border-radius: 4px;" />
+                        <MudImage Src="/images/pokupok.png" Alt="Белкарт" Height="30" Style="background: white; padding: 4px; border-radius: 4px;" />
+                        <MudImage Src="/images/cash.png" Alt="ЕРИП" Height="30" Style="background: white; padding: 4px; border-radius: 4px;" />
+                        <MudImage Src="/images/oplati_foot.png" Alt="ЕРИП" Height="30" Style="background: white; padding: 4px; border-radius: 4px;" />
+                    </MudStack>
+
+                    <!-- Министерство финансов -->
+                    <MudButton Variant="Variant.Outlined"
+                               Style="color: white; border-color: #6b7280; text-transform: none; justify-content: flex-start;"
+                               StartIcon="@Icons.Material.Filled.AccountBalance"
+                               EndIcon="@Icons.Material.Filled.ArrowForward"
+                               Href="https://www.minfin.gov.by/"
+                               Target="_blank"
+                               FullWidth="false">
+                        Министерство финансов РБ
+                    </MudButton>
+                </MudStack>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Нижняя часть футера -->
+        <MudDivider Class="my-4" Style="background-color: #6b7280;" />
+
+        <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.body2" Style="color: #9ca3af;">
+                © «INSURANCE» @DateTime.Now.Year
             </MudText>
-            <MudStack Spacing="1" Class="mt-1">
-                <MudText Typo="Typo.body2">
-                    Линия консультаций: <b>+375 (44) 595-71-94</b>
-                </MudText>
-                <MudText Typo="Typo.body2">
-                    Поддержка (юр. лица): <b>+375 (29) 688-11-99</b>
-                </MudText>
-                <MudText Typo="Typo.body2">
-                    Поддержка (физ. лица): <b>+375 (17) 270-09-22</b>
-                </MudText>
-                <MudText Typo="Typo.body2">
-                    E-mail: <MudLink Href="mailto:online_support@ken.by">online_support@ken.by</MudLink>
+            <MudStack Row Spacing="1" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.caption" Style="color: #6b7280;">
+                    v.0.01.001
                 </MudText>
             </MudStack>
-        </MudItem>
-
-        <MudItem xs="12" md="4">
-            <MudText Typo="Typo.subtitle2" Style="font-weight:600;">
-                Информация
-            </MudText>
-            <MudStack Spacing="1" Class="mt-1">
-                <MudLink Href="#" Typo="Typo.body2" Color="Color.Default">Политика конфиденциальности</MudLink>
-                <MudLink Href="#" Typo="Typo.body2" Color="Color.Default">Условия использования</MudLink>
-                <MudLink Href="#" Typo="Typo.body2" Color="Color.Default">Политика Cookie</MudLink>
-            </MudStack>
-        </MudItem>
-    </MudGrid>
-
-    <MudDivider Class="my-3" />
-
-    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Spacing="2">
-        <MudText Typo="Typo.caption" Class="opacity-75">
-            © Все права защищены, 2026
-        </MudText>
-        <MudText Typo="Typo.caption" Class="opacity-75">
-            Версия сервиса: v. 0.01.001
-        </MudText>
-    </MudStack>
+        </MudStack>
+    </MudContainer>
 </MudPaper>
-
