@@ -1,71 +1,90 @@
 @page "/login"
 
-<PageTitle>Вход</PageTitle>
+@rendermode InteractiveServer
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
-    <MudPaper Elevation="3" Class="pa-6" Style="border-radius:12px; background-color:#ffffff;">
-        <MudStack Spacing="2">
-            <MudText Typo="Typo.h5" Style="font-weight:600;">
-                Вход в систему
-            </MudText>
-            <MudText Typo="Typo.body2" Class="mb-2 opacity-75">
-                Введите логин и пароль для входа в личный кабинет.
-            </MudText>
+<PageTitle>Вход в личный кабинет</PageTitle>
+<MudContainer MaxWidth="MaxWidth.Small" Class="py-8">
+    <MudStack Spacing="4" AlignItems="AlignItems.Center">
+        <!-- Заголовок -->
+        <MudText Typo="Typo.h4" Style="font-weight:600; color:#2d3748;">
+            Вход в систему
+        </MudText>
 
+        <!-- Форма -->
+        <MudPaper Elevation="0" Class="pa-6" Style="width:100%; max-width:420px; border-radius:8px; background-color:#ffffff;">
             <EditForm Model="_model" OnValidSubmit="HandleValidSubmit">
                 <DataAnnotationsValidator />
-
-                <MudStack Spacing="2">
+                <MudStack Spacing="3">
+                    <!-- Поле логина -->
                     <MudTextField @bind-Value="_model.Login"
-                                  Label="Логин"
+                                  Placeholder="Логин (e-mail, указанный при регистрации)"
                                   Required="true"
                                   RequiredError="Укажите логин"
                                   FullWidth="true"
-                                  Variant="Variant.Outlined" />
+                                  Variant="Variant.Outlined"
+                                  Style="background-color:#f7fafc;" />
 
+                    <!-- Поле пароля -->
                     <MudTextField @bind-Value="_model.Password"
-                                  Label="Пароль"
-                                  InputType="InputType.Password"
+                                  Placeholder="Пароль"
+                                  InputType="@_passwordInput"
                                   Required="true"
                                   RequiredError="Укажите пароль"
                                   FullWidth="true"
-                                  Variant="Variant.Outlined" />
+                                  Variant="Variant.Outlined"
+                                  Style="background-color:#f7fafc;"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@(_showPassword? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                  OnAdornmentClick="TogglePasswordVisibility" />
 
-                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                        <MudCheckBox @bind-Checked="_model.RememberMe" Label="Запомнить меня" T="bool" />
-                        <MudLink Href="#" Typo="Typo.body2" Color="Color.Primary">
-                            Забыли пароль?
-                        </MudLink>
-                    </MudStack>
-
+                    <!-- Кнопка входа -->
                     <MudButton ButtonType="ButtonType.Submit"
-                               Variant="Variant.Filled"
-                               Color="Color.Primary"
+                               Variant="Variant.Outlined"
                                FullWidth="true"
+                               Size="Size.Large"
+                               StartIcon="@Icons.Material.Filled.Login"
+                               Color="Color.Primary"
                                Class="mt-2">
-                        Войти
+                        ВОЙТИ
                     </MudButton>
                 </MudStack>
             </EditForm>
+        </MudPaper>
+
+        <!-- Ссылки под формой -->
+        <MudStack Spacing="2" AlignItems="AlignItems.Center">
+            <MudLink Href="/forgot-password" Typo="Typo.body1" Style="color:#2d3748; font-weight:500;">
+                Забыли пароль?
+            </MudLink>
+
+            <MudStack Spacing="0" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.body1" Style="color:#2d3748; font-weight:600;">
+                    <MudLink Href="/register">Зарегистрируйтесь</MudLink>, если у Вас нет учетной записи.
+                </MudText>
+            </MudStack>
         </MudStack>
-    </MudPaper>
+    </MudStack>
 </MudContainer>
 
 @code {
     private LoginModel _model = new();
+    private bool _showPassword = false;
+    private InputType _passwordInput = InputType.Password;
+
+    private void TogglePasswordVisibility()
+    {
+        _showPassword = !_showPassword;
+        _passwordInput = _showPassword ? InputType.Text : InputType.Password;
+    }
 
     private void HandleValidSubmit()
     {
-        // Здесь позже можно добавить реальную логику аутентификации
+        // Логика входа
     }
 
-    private sealed class LoginModel
+    public class LoginModel
     {
-        public string? Login { get; set; }
-
-        public string? Password { get; set; }
-
-        public bool RememberMe { get; set; }
+        public string Login { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
     }
 }
-
