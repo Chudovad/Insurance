@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Insurance.MiniApp/Insurance.MiniApp.Client/Insurance.MiniApp.Client.csproj" />
+  <Project Path="Insurance.MiniApp/Insurance.MiniApp/Insurance.MiniApp.csproj" />
+</Solution>

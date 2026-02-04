@@ -1,0 +1,69 @@
+@page "/login"
+
+<PageTitle>Вход</PageTitle>
+
+<MudPaper Elevation="3" Class="pa-6" Style="border-radius:12px; background-color:#ffffff;">
+    <MudStack Spacing="2">
+        <MudText Typo="Typo.h5" Style="font-weight:600;">
+            Вход в систему
+        </MudText>
+        <MudText Typo="Typo.body2" Class="mb-2 opacity-75">
+            Введите логин и пароль для входа в личный кабинет.
+        </MudText>
+
+        <EditForm Model="_model" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+
+            <MudStack Spacing="2">
+                <MudTextField @bind-Value="_model.Login"
+                              Label="Логин"
+                              Required="true"
+                              RequiredError="Укажите логин"
+                              FullWidth="true"
+                              Variant="Variant.Outlined" />
+
+                <MudTextField @bind-Value="_model.Password"
+                              Label="Пароль"
+                              InputType="InputType.Password"
+                              Required="true"
+                              RequiredError="Укажите пароль"
+                              FullWidth="true"
+                              Variant="Variant.Outlined" />
+
+                <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudCheckBox @bind-Checked="_model.RememberMe" Label="Запомнить меня" T="bool"/>
+                    <MudLink Href="#" Typo="Typo.body2" Color="Color.Primary">
+                        Забыли пароль?
+                    </MudLink>
+                </MudStack>
+
+                <MudButton ButtonType="ButtonType.Submit"
+                           Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           FullWidth="true"
+                           Class="mt-2">
+                    Войти
+                </MudButton>
+            </MudStack>
+        </EditForm>
+    </MudStack>
+</MudPaper>
+
+@code {
+    private LoginModel _model = new();
+
+    private void HandleValidSubmit()
+    {
+        // Здесь позже можно добавить реальную логику аутентификации
+    }
+
+    private sealed class LoginModel
+    {
+        public string? Login { get; set; }
+
+        public string? Password { get; set; }
+
+        public bool RememberMe { get; set; }
+    }
+}
+
