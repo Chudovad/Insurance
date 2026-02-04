@@ -21,8 +21,7 @@
                                   Required="true"
                                   RequiredError="Укажите логин"
                                   FullWidth="true"
-                                  Variant="Variant.Outlined"
-                                  Style="background-color:#f7fafc;" />
+                                  Variant="Variant.Outlined" />
 
                     <!-- Поле пароля -->
                     <MudTextField @bind-Value="_model.Password"
@@ -32,7 +31,6 @@
                                   RequiredError="Укажите пароль"
                                   FullWidth="true"
                                   Variant="Variant.Outlined"
-                                  Style="background-color:#f7fafc;"
                                   Adornment="Adornment.End"
                                   AdornmentIcon="@(_showPassword? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
                                   OnAdornmentClick="TogglePasswordVisibility" />
@@ -45,7 +43,7 @@
                                StartIcon="@Icons.Material.Filled.Login"
                                Color="Color.Primary"
                                Class="mt-2">
-                        ВОЙТИ
+                        Войти
                     </MudButton>
                 </MudStack>
             </EditForm>
@@ -53,12 +51,12 @@
 
         <!-- Ссылки под формой -->
         <MudStack Spacing="2" AlignItems="AlignItems.Center">
-            <MudLink Href="/forgot-password" Typo="Typo.body1" Style="color:#2d3748; font-weight:500;">
+            <MudLink Href="/restore/password" Typo="Typo.body1" Color="Color.Inherit">
                 Забыли пароль?
             </MudLink>
 
             <MudStack Spacing="0" AlignItems="AlignItems.Center">
-                <MudText Typo="Typo.body1" Style="color:#2d3748; font-weight:600;">
+                <MudText Typo="Typo.body1" Color="Color.Inherit">
                     <MudLink Href="/register">Зарегистрируйтесь</MudLink>, если у Вас нет учетной записи.
                 </MudText>
             </MudStack>
