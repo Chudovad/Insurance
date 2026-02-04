@@ -1,0 +1,61 @@
+﻿@page "/register"
+
+@rendermode InteractiveServer
+
+<PageTitle>Регистрация</PageTitle>
+<MudContainer MaxWidth="MaxWidth.Small" Class="py-8">
+    <MudStack Spacing="4" AlignItems="AlignItems.Center">
+        <!-- Заголовок -->
+        <MudText Typo="Typo.h4" Style="font-weight:600; color:#2d3748;">
+            Регистрация
+        </MudText>
+
+        <!-- Форма -->
+        <MudPaper Elevation="0" Class="pa-6" Style="width:100%; max-width:480px; border-radius:8px; background-color:#ffffff;">
+            <EditForm Model="_model" OnValidSubmit="HandleCheckClient">
+                <DataAnnotationsValidator />
+                <MudStack Spacing="3">
+                    <!-- Поле идентификационного номера -->
+                    <MudTextField @bind-Value="_model.IdentificationNumber"
+                                  Placeholder="Идентиф. номер (паспорта/вида на жительство)"
+                                  Required="true"
+                                  RequiredError="Укажите идентификационный номер"
+                                  FullWidth="true"
+                                  Variant="Variant.Outlined"
+                                  />
+
+                    <!-- Кнопка проверки клиента -->
+                    <MudButton ButtonType="ButtonType.Submit"
+                               Variant="Variant.Outlined"
+                               FullWidth="true"
+                               Size="Size.Large"
+                               StartIcon="@Icons.Material.Filled.Search"
+                               Color="Color.Primary"
+                               Class="mt-2">
+                        ПРОВЕРИТЬ КЛИЕНТА
+                    </MudButton>
+                </MudStack>
+            </EditForm>
+        </MudPaper>
+
+        <!-- Ссылка для возврата ко входу -->
+        <MudLink Href="/login" Typo="Typo.body1" Style="color:#2d3748; font-weight:500;">
+            Вернуться ко входу
+        </MudLink>
+    </MudStack>
+</MudContainer>
+
+@code {
+    private RegisterModel _model = new();
+
+    private void HandleCheckClient()
+    {
+        // Логика проверки клиента по идентификационному номеру
+        // После успешной проверки можно показать дополнительные поля для регистрации
+    }
+
+    public class RegisterModel
+    {
+        public string IdentificationNumber { get; set; } = string.Empty;
+    }
+}
