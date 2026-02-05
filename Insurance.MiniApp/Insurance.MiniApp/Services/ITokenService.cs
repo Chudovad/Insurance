@@ -8,4 +8,5 @@ public interface ITokenService
     Task<AuthResponse?> GetTokensAsync();
     Task ClearTokensAsync();
     Task<bool> IsAuthenticatedAsync();
+    Task<string?> GetUserEmailAsync();
 }

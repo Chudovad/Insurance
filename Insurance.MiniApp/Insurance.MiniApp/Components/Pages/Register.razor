@@ -160,7 +160,7 @@
             {
                 await TokenService.SaveTokensAsync(result.Data);
 
-                Snackbar.Add("Регистрация успешна! Вы автоматически вошли в систему.", Severity.Success);
+                Snackbar.Add("Регистрация успешна!", Severity.Success);
 
                 Navigation.NavigateTo("/login");
             }

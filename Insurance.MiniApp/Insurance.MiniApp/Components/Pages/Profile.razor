@@ -1,7 +1,44 @@
-﻿@page "/profile"
+@page "/profile"
+@using Insurance.MiniApp.Services
+@using Microsoft.AspNetCore.Components
+@inject ITokenService TokenService
+@inject NavigationManager Navigation
+
+@rendermode InteractiveServer
 
 <PageTitle>Профиль</PageTitle>
 
-@code {
+@if (_isLoading)
+{
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="py-8">
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="min-height: 400px;">
+            <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+        </MudStack>
+    </MudContainer>
+}
+else
+{
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="py-8">
+        <MudText Typo="Typo.h4" Style="font-weight:600; color:#2d3748;">
+            Профиль пользователя
+        </MudText>
+        <!-- Здесь будет содержимое профиля -->
+    </MudContainer>
+}
 
+@code {
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var isAuthenticated = await TokenService.IsAuthenticatedAsync();
+        
+        if (!isAuthenticated)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        _isLoading = false;
+    }
 }

@@ -1,4 +1,12 @@
-﻿<MudAppBar Elevation="1">
+@using Insurance.MiniApp.Services
+@using Microsoft.AspNetCore.Components
+@implements IDisposable
+@inject ITokenService TokenService
+@inject NavigationManager Navigation
+
+@rendermode InteractiveServer
+
+<MudAppBar Elevation="1">
     <MudContainer MaxWidth="MaxWidth.Large" Class="d-flex align-center px-0">
         <MudIcon Icon="@Icons.Material.Filled.VerifiedUser" Size="Size.Large" Style="color:#246bce;" />
         <MudLink Href="/" Underline="Underline.None" Class="ml-2">
@@ -7,12 +15,66 @@
             </MudText>
         </MudLink>
         <MudSpacer />
-        <MudButton Href="/login" Color="Color.Primary" Variant="Variant.Filled">
-            Войти
-        </MudButton>
+        
+        @if (_isAuthenticated)
+        {
+            <MudText Typo="Typo.body1" Class="mr-4" Style="color:#222222;">
+                @_userEmail
+            </MudText>
+            <MudButton Href="/profile" Color="Color.Primary" Variant="Variant.Filled" Class="mr-2" StartIcon="@Icons.Material.Filled.AccountCircle">
+                Профиль
+            </MudButton>
+            <MudButton OnClick="HandleLogout" Color="Color.Primary" Variant="Variant.Filled">
+                Выйти
+            </MudButton>
+        }
+        else
+        {
+            <MudButton Href="/login" Color="Color.Primary" Variant="Variant.Filled">
+                Войти
+            </MudButton>
+        }
     </MudContainer>
 </MudAppBar>
 
 @code {
+    private bool _isAuthenticated = false;
+    private string? _userEmail;
 
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAuthState();
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        await LoadAuthState();
+        StateHasChanged();
+    }
+
+    private async Task LoadAuthState()
+    {
+        _isAuthenticated = await TokenService.IsAuthenticatedAsync();
+        if (_isAuthenticated)
+        {
+            _userEmail = await TokenService.GetUserEmailAsync();
+        }
+        else
+        {
+            _userEmail = null;
+        }
+    }
+
+    private async Task HandleLogout()
+    {
+        await TokenService.ClearTokensAsync();
+        await LoadAuthState();
+        Navigation.NavigateTo("/login");
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
 }
