@@ -10,35 +10,233 @@
 
 @if (_isLoading)
 {
-    <MudContainer MaxWidth="MaxWidth.Medium" Class="py-8">
-        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="min-height: 400px;">
-            <MudProgressCircular Indeterminate="true" Size="Size.Large" />
-        </MudStack>
+    <MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
+        <MudTabs Color="Color.Default" Class="mb-4">
+            <MudTabPanel Text="Персональные данные">
+                <MudGrid Spacing="3" Class="mt-4">
+                    <!-- Левая колонка - скелетон -->
+                    <MudItem xs="12" md="6">
+                        @for (int i = 0; i < 6; i++)
+                        {
+                            <MudCard Elevation="2" Class="profile-card mb-3">
+                                <MudCardContent>
+                                    <MudStack Spacing="2">
+                                        <MudSkeleton SkeletonType="SkeletonType.Text" Width="40%" Height="20px" />
+                                        <MudSkeleton SkeletonType="SkeletonType.Text" Width="80%" Height="24px" />
+                                    </MudStack>
+                                </MudCardContent>
+                            </MudCard>
+                        }
+                    </MudItem>
+                    <!-- Правая колонка - скелетон -->
+                    <MudItem xs="12" md="6">
+                        <MudCard Elevation="2" Class="profile-card">
+                            <MudCardContent>
+                                <MudStack Spacing="2">
+                                    <MudSkeleton SkeletonType="SkeletonType.Text" Width="30%" Height="24px" />
+                                    @for (int i = 0; i < 5; i++)
+                                    {
+                                        <MudSkeleton SkeletonType="SkeletonType.Text" Width="60%" Height="20px" />
+                                        <MudSkeleton SkeletonType="SkeletonType.Text" Width="90%" Height="20px" />
+                                    }
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+        </MudTabs>
     </MudContainer>
 }
 else
 {
-    <MudContainer MaxWidth="MaxWidth.Medium" Class="py-8">
-        <MudText Typo="Typo.h4" Style="font-weight:600; color:#2d3748;">
-            Профиль пользователя
-        </MudText>
-        <!-- Здесь будет содержимое профиля -->
+    <MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
+        <MudTabs Color="Color.Default" Class="mb-4" @bind-ActivePanelIndex="_activeTabIndex">
+            <MudTabPanel Text="Персональные данные">
+                <MudGrid Spacing="3" Class="mt-4">
+                    <!-- Левая колонка - Личная информация -->
+                    <MudItem xs="12" md="6">
+                        <!-- ФИО -->
+                        <MudCard Elevation="2" Class="profile-card mb-3">
+                            <MudCardContent>
+                                <MudStack Row Spacing="2" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudStack Spacing="1" Style="flex: 1;">
+                                        <MudText Typo="Typo.body2" Style="color: #718096; font-size: 14px;">ФИО:</MudText>
+                                        <MudText Typo="Typo.h6" Style="color: #2d3748; font-weight: 600; text-transform: uppercase;">
+                                            Тестов Тест Тестович
+                                        </MudText>
+                                    </MudStack>
+                                    <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Size="Size.Large" Style="font-size: 48px;" />
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+
+                        <!-- ФИ латиницей -->
+                        <MudCard Elevation="2" Class="profile-card mb-3">
+                            <MudCardContent>
+                                <MudStack Spacing="1">
+                                    <MudText Typo="Typo.body2" Style="color: #718096; font-size: 14px;">ФИ (латиницей):</MudText>
+                                    <MudText Typo="Typo.body1" Style="color: #e53e3e; font-weight: 500;">
+                                        - данные не заполнены -
+                                    </MudText>
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+
+                        <!-- Пол, Дата рождения, Гражданство -->
+                        <MudCard Elevation="2" Class="profile-card mb-3">
+                            <MudCardContent>
+                                <MudStack Spacing="2">
+                                    <MudStack Row Spacing="2">
+                                        <MudText Typo="Typo.body2" Style="color: #718096; font-size: 14px; min-width: 120px;">Пол:</MudText>
+                                        <MudText Typo="Typo.body1" Style="color: #2d3748; font-weight: 500;">Мужской</MudText>
+                                    </MudStack>
+                                    <MudStack Row Spacing="2">
+                                        <MudText Typo="Typo.body2" Style="color: #718096; font-size: 14px; min-width: 120px;">Дата рождения:</MudText>
+                                        <MudText Typo="Typo.body1" Style="color: #2d3748; font-weight: 500;">01.01.1980</MudText>
+                                    </MudStack>
+                                    <MudStack Row Spacing="2">
+                                        <MudText Typo="Typo.body2" Style="color: #718096; font-size: 14px; min-width: 120px;">Гражданство:</MudText>
+                                        <MudText Typo="Typo.body1" Style="color: #2d3748; font-weight: 500;">Беларусь</MudText>
+                                    </MudStack>
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+
+                        <!-- Адрес регистрации -->
+                        <MudCard Elevation="2" Class="profile-card mb-3">
+                            <MudCardContent>
+                                <MudStack Row Spacing="2" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudStack Spacing="1" Style="flex: 1;">
+                                        <MudText Typo="Typo.body2" Style="color: #718096; font-size: 14px;">Адрес регистрации:</MudText>
+                                        <MudText Typo="Typo.body1" Style="color: #2d3748; font-weight: 500; text-transform: uppercase;">
+                                            БЕЛАРУСЬ, г. Минск
+                                        </MudText>
+                                    </MudStack>
+                                    <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Medium" Style="font-size: 36px;" />
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+
+                        <!-- Номер телефона -->
+                        <MudCard Elevation="2" Class="profile-card mb-3">
+                            <MudCardContent>
+                                <MudStack Row Spacing="2" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudStack Spacing="1" Style="flex: 1;">
+                                        <MudText Typo="Typo.body2" Style="color: #718096; font-size: 14px;">Номер телефона:</MudText>
+                                        <MudText Typo="Typo.body1" Style="color: #2d3748; font-weight: 500;">
+                                            +375 (29) 111-11-11
+                                        </MudText>
+                                    </MudStack>
+                                    <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Medium" Style="font-size: 36px;" />
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+
+                        <!-- Адрес электронной почты -->
+                        <MudCard Elevation="2" Class="profile-card mb-3">
+                            <MudCardContent>
+                                <MudStack Row Spacing="2" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudStack Spacing="1" Style="flex: 1;">
+                                        <MudText Typo="Typo.body2" Style="color: #718096; font-size: 14px;">Адрес электронной почты:</MudText>
+                                        <MudText Typo="Typo.body1" Style="color: #2d3748; font-weight: 500;">
+                                            testov@test.ru
+                                        </MudText>
+                                    </MudStack>
+                                    <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Medium" Style="font-size: 36px;" />
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+
+                    <!-- Правая колонка - Паспортная информация -->
+                    <MudItem xs="12" md="6">
+                        <MudCard Elevation="2" Class="profile-card">
+                            <MudCardContent>
+                                <MudStack Row Spacing="2" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                                    <MudText Typo="Typo.h6" Style="color: #2d3748; font-weight: 600; text-transform: uppercase;">
+                                        ПАСПОРТ
+                                    </MudText>
+                                    <MudIcon Icon="@Icons.Material.Filled.Public" Size="Size.Medium" Style="font-size: 36px;" />
+                                </MudStack>
+                                <MudStack Spacing="3">
+                                    <MudStack Row Spacing="2">
+                                        <MudText Typo="Typo.body2" Style="color: #718096; font-size: 14px; min-width: 180px;">Серия:</MudText>
+                                        <MudText Typo="Typo.body1" Style="color: #2d3748; font-weight: 500;">----</MudText>
+                                    </MudStack>
+                                    <MudStack Row Spacing="2">
+                                        <MudText Typo="Typo.body2" Style="color: #718096; font-size: 14px; min-width: 180px;">Номер:</MudText>
+                                        <MudText Typo="Typo.body1" Style="color: #2d3748; font-weight: 500;">----</MudText>
+                                    </MudStack>
+                                    <MudStack Row Spacing="2">
+                                        <MudText Typo="Typo.body2" Style="color: #718096; font-size: 14px; min-width: 180px;">Идентификационный номер:</MudText>
+                                        <MudText Typo="Typo.body1" Style="color: #2d3748; font-weight: 500;">-------------</MudText>
+                                    </MudStack>
+                                    <MudStack Row Spacing="2">
+                                        <MudText Typo="Typo.body2" Style="color: #718096; font-size: 14px; min-width: 180px;">Выдан:</MudText>
+                                        <MudText Typo="Typo.body1" Style="color: #2d3748; font-weight: 500;">--------------------------------</MudText>
+                                    </MudStack>
+                                    <MudStack Row Spacing="2">
+                                        <MudText Typo="Typo.body2" Style="color: #718096; font-size: 14px; min-width: 180px;">Дата выдачи:</MudText>
+                                        <MudText Typo="Typo.body1" Style="color: #2d3748; font-weight: 500;">-------------</MudText>
+                                    </MudStack>
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                </MudGrid>
+
+                <!-- Кнопка обновления и сообщение о сохранении -->
+                <MudStack Row Spacing="3" AlignItems="AlignItems.Center" Class="mt-4">
+                    <MudButton Variant="Variant.Filled" 
+                               Color="Color.Primary" 
+                               Size="Size.Large"
+                               StartIcon="@Icons.Material.Filled.Refresh"
+                               Style="padding: 12px 24px;">
+                        Обновить данные через МСИ
+                    </MudButton>
+                    <MudStack Row Spacing="2" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.body2" Style="color: #718096;">
+                            Персональные данные сохранены: 13.02.2025 в 15:12
+                        </MudText>
+                        <MudIcon Icon="@Icons.Material.Filled.Save" Size="Size.Small" />
+                    </MudStack>
+                </MudStack>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Настройки учетной записи">
+                <MudCard Elevation="2" Class="profile-card mt-4">
+                    <MudCardContent>
+                        <MudText Typo="Typo.body1" Style="color: #718096;">
+                            Настройки учетной записи будут здесь
+                        </MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudTabPanel>
+        </MudTabs>
     </MudContainer>
 }
 
 @code {
     private bool _isLoading = true;
+    private int _activeTabIndex = 0;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        var isAuthenticated = await TokenService.IsAuthenticatedAsync();
-        
-        if (!isAuthenticated)
+        if (firstRender)
         {
-            Navigation.NavigateTo("/login");
-            return;
-        }
+            var isAuthenticated = await TokenService.IsAuthenticatedAsync();
 
-        _isLoading = false;
+            if (!isAuthenticated)
+            {
+                Navigation.NavigateTo("/login");
+                return;
+            }
+
+            // Имитация загрузки данных
+            await Task.Delay(800);
+            _isLoading = false;
+            StateHasChanged();
+        }
     }
 }
