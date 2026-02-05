@@ -7,5 +7,5 @@ public interface ITokenService
     Task SaveTokensAsync(AuthResponse authResponse);
     Task<AuthResponse?> GetTokensAsync();
     Task ClearTokensAsync();
-    bool IsAuthenticated();
+    Task<bool> IsAuthenticatedAsync();
 }

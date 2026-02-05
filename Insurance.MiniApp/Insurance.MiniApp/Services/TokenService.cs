@@ -1,61 +1,101 @@
 using System.Net;
 using Insurance.Domain.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.JSInterop;
 
 namespace Insurance.MiniApp.Services;
 
-public class TokenService(IHttpContextAccessor httpContextAccessor, IWebHostEnvironment environment) : ITokenService
+public class TokenService : ITokenService
 {
     private const string AccessTokenCookieName = "access_token";
     private const string RefreshTokenCookieName = "refresh_token";
     private const string AccessTokenExpiresCookieName = "access_token_expires";
     private const string RefreshTokenExpiresCookieName = "refresh_token_expires";
 
-    private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
-    private readonly IWebHostEnvironment _environment = environment;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IWebHostEnvironment _environment;
+    private readonly IJSRuntime _jsRuntime;
 
-    public Task SaveTokensAsync(AuthResponse authResponse)
+    public TokenService(IHttpContextAccessor httpContextAccessor, IWebHostEnvironment environment, IJSRuntime jsRuntime)
     {
-        var httpContext = _httpContextAccessor.HttpContext;
-        if (httpContext == null)
-            return Task.CompletedTask;
+        _httpContextAccessor = httpContextAccessor;
+        _environment = environment;
+        _jsRuntime = jsRuntime;
+    }
 
-        var cookieOptions = new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = !_environment.IsDevelopment(), // В production только HTTPS, в development разрешаем HTTP
-            SameSite = SameSiteMode.Strict,
-            Path = "/"
-        };
+    public async Task SaveTokensAsync(AuthResponse authResponse)
+    {
+        var secure = !_environment.IsDevelopment();
+        var sameSite = "Strict";
 
         // Сохраняем Access Token (срок действия до истечения токена)
         var accessTokenExpires = authResponse.AccessTokenExpiresAt.ToUniversalTime();
-        cookieOptions.Expires = accessTokenExpires;
-        httpContext.Response.Cookies.Append(AccessTokenCookieName, authResponse.AccessToken, cookieOptions);
-        httpContext.Response.Cookies.Append(AccessTokenExpiresCookieName, accessTokenExpires.ToString("O"), cookieOptions);
+        await _jsRuntime.InvokeVoidAsync("cookieHelper.setCookie", 
+            AccessTokenCookieName, 
+            authResponse.AccessToken, 
+            accessTokenExpires, 
+            secure, 
+            sameSite);
+        
+        await _jsRuntime.InvokeVoidAsync("cookieHelper.setCookie", 
+            AccessTokenExpiresCookieName, 
+            accessTokenExpires.ToString("O"), 
+            accessTokenExpires, 
+            secure, 
+            sameSite);
 
         // Сохраняем Refresh Token (срок действия до истечения токена)
         var refreshTokenExpires = authResponse.RefreshTokenExpiresAt.ToUniversalTime();
-        cookieOptions.Expires = refreshTokenExpires;
-        httpContext.Response.Cookies.Append(RefreshTokenCookieName, authResponse.RefreshToken, cookieOptions);
-        httpContext.Response.Cookies.Append(RefreshTokenExpiresCookieName, refreshTokenExpires.ToString("O"), cookieOptions);
-
-        return Task.CompletedTask;
+        await _jsRuntime.InvokeVoidAsync("cookieHelper.setCookie", 
+            RefreshTokenCookieName, 
+            authResponse.RefreshToken, 
+            refreshTokenExpires, 
+            secure, 
+            sameSite);
+        
+        await _jsRuntime.InvokeVoidAsync("cookieHelper.setCookie", 
+            RefreshTokenExpiresCookieName, 
+            refreshTokenExpires.ToString("O"), 
+            refreshTokenExpires, 
+            secure, 
+            sameSite);
     }
 
-    public Task<AuthResponse?> GetTokensAsync()
+    public async Task<AuthResponse?> GetTokensAsync()
     {
+        // Пытаемся получить из cookies через HttpContext (для серверной части)
         var httpContext = _httpContextAccessor.HttpContext;
-        if (httpContext == null)
-            return Task.FromResult<AuthResponse?>(null);
+        string? accessToken = null;
+        string? refreshToken = null;
+        string? accessTokenExpiresStr = null;
+        string? refreshTokenExpiresStr = null;
 
-        var accessToken = httpContext.Request.Cookies[AccessTokenCookieName];
-        var refreshToken = httpContext.Request.Cookies[RefreshTokenCookieName];
-        var accessTokenExpiresStr = httpContext.Request.Cookies[AccessTokenExpiresCookieName];
-        var refreshTokenExpiresStr = httpContext.Request.Cookies[RefreshTokenExpiresCookieName];
+        if (httpContext != null)
+        {
+            accessToken = httpContext.Request.Cookies[AccessTokenCookieName];
+            refreshToken = httpContext.Request.Cookies[RefreshTokenCookieName];
+            accessTokenExpiresStr = httpContext.Request.Cookies[AccessTokenExpiresCookieName];
+            refreshTokenExpiresStr = httpContext.Request.Cookies[RefreshTokenExpiresCookieName];
+        }
+
+        // Если не найдено в HttpContext, пытаемся получить через JavaScript (для клиентской части)
+        if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+        {
+            try
+            {
+                accessToken = await _jsRuntime.InvokeAsync<string?>("cookieHelper.getCookie", AccessTokenCookieName);
+                refreshToken = await _jsRuntime.InvokeAsync<string?>("cookieHelper.getCookie", RefreshTokenCookieName);
+                accessTokenExpiresStr = await _jsRuntime.InvokeAsync<string?>("cookieHelper.getCookie", AccessTokenExpiresCookieName);
+                refreshTokenExpiresStr = await _jsRuntime.InvokeAsync<string?>("cookieHelper.getCookie", RefreshTokenExpiresCookieName);
+            }
+            catch
+            {
+                // Игнорируем ошибки JS Interop
+            }
+        }
 
         if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
-            return Task.FromResult<AuthResponse?>(null);
+            return null;
 
         var authResponse = new AuthResponse
         {
@@ -69,40 +109,46 @@ public class TokenService(IHttpContextAccessor httpContextAccessor, IWebHostEnvi
                 : DateTime.UtcNow.AddDays(7)
         };
 
-        return Task.FromResult<AuthResponse?>(authResponse);
+        return authResponse;
     }
 
-    public Task ClearTokensAsync()
+    public async Task ClearTokensAsync()
     {
-        var httpContext = _httpContextAccessor.HttpContext;
-        if (httpContext == null)
-            return Task.CompletedTask;
+        var secure = !_environment.IsDevelopment();
+        var sameSite = "Strict";
 
-        var cookieOptions = new CookieOptions
+        await _jsRuntime.InvokeVoidAsync("cookieHelper.deleteCookie", AccessTokenCookieName, secure, sameSite);
+        await _jsRuntime.InvokeVoidAsync("cookieHelper.deleteCookie", RefreshTokenCookieName, secure, sameSite);
+        await _jsRuntime.InvokeVoidAsync("cookieHelper.deleteCookie", AccessTokenExpiresCookieName, secure, sameSite);
+        await _jsRuntime.InvokeVoidAsync("cookieHelper.deleteCookie", RefreshTokenExpiresCookieName, secure, sameSite);
+    }
+
+    public async Task<bool> IsAuthenticatedAsync()
+    {
+        string? accessToken = null;
+        string? accessTokenExpiresStr = null;
+
+        // Пытаемся получить из HttpContext
+        var httpContext = _httpContextAccessor.HttpContext;
+        if (httpContext != null)
         {
-            HttpOnly = true,
-            Secure = !_environment.IsDevelopment(), // В production только HTTPS, в development разрешаем HTTP
-            SameSite = SameSiteMode.Strict,
-            Path = "/",
-            Expires = DateTime.UtcNow.AddDays(-1) // Удаляем cookie, устанавливая прошедшую дату
-        };
+            accessToken = httpContext.Request.Cookies[AccessTokenCookieName];
+            accessTokenExpiresStr = httpContext.Request.Cookies[AccessTokenExpiresCookieName];
+        }
 
-        httpContext.Response.Cookies.Delete(AccessTokenCookieName, cookieOptions);
-        httpContext.Response.Cookies.Delete(RefreshTokenCookieName, cookieOptions);
-        httpContext.Response.Cookies.Delete(AccessTokenExpiresCookieName, cookieOptions);
-        httpContext.Response.Cookies.Delete(RefreshTokenExpiresCookieName, cookieOptions);
-
-        return Task.CompletedTask;
-    }
-
-    public bool IsAuthenticated()
-    {
-        var httpContext = _httpContextAccessor.HttpContext;
-        if (httpContext == null)
-            return false;
-
-        var accessToken = httpContext.Request.Cookies[AccessTokenCookieName];
-        var accessTokenExpiresStr = httpContext.Request.Cookies[AccessTokenExpiresCookieName];
+        // Если не найдено, пытаемся получить через JavaScript
+        if (string.IsNullOrEmpty(accessToken))
+        {
+            try
+            {
+                accessToken = await _jsRuntime.InvokeAsync<string?>("cookieHelper.getCookie", AccessTokenCookieName);
+                accessTokenExpiresStr = await _jsRuntime.InvokeAsync<string?>("cookieHelper.getCookie", AccessTokenExpiresCookieName);
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         if (string.IsNullOrEmpty(accessToken))
             return false;
