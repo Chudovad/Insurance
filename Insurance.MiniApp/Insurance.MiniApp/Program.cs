@@ -1,4 +1,3 @@
-using Insurance.MiniApp.Client.Pages;
 using Insurance.MiniApp.Components;
 using MudBlazor.Services;
 
