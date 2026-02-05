@@ -1,10 +1,26 @@
 using Insurance.MiniApp.Components;
+using Insurance.MiniApp.Services;
 using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add MudBlazor services
 builder.Services.AddMudServices();
+
+// Add HttpClient for API calls
+builder.Services.AddHttpClient("ApiClient", client =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7183";
+    client.BaseAddress = new Uri(apiBaseUrl);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
+// Add HttpContextAccessor for cookie access
+builder.Services.AddHttpContextAccessor();
+
+// Add services
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

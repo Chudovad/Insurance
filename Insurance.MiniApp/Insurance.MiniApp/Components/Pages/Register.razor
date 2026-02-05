@@ -1,4 +1,12 @@
-﻿@page "/register"
+@page "/register"
+@using System.ComponentModel.DataAnnotations
+@using Insurance.Domain.Models
+@using Insurance.MiniApp.Services
+@using Microsoft.AspNetCore.Components
+@inject IAuthService AuthService
+@inject ITokenService TokenService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
 
 @rendermode InteractiveServer
 
@@ -12,26 +20,75 @@
 
         <!-- Форма -->
         <MudPaper Elevation="0" Class="pa-6" Style="width:100%; max-width:480px; border-radius:8px; background-color:#ffffff;">
-            <EditForm Model="_model" OnValidSubmit="HandleCheckClient">
+            <EditForm Model="_model" OnValidSubmit="HandleRegister">
                 <DataAnnotationsValidator />
                 <MudStack Spacing="3">
+
                     <!-- Поле идентификационного номера -->
-                    <MudTextField @bind-Value="_model.IdentificationNumber"
+                    @* <MudTextField @bind-Value="_model.IdentificationNumber"
                                   Placeholder="Идентиф. номер (паспорта/вида на жительство)"
                                   Required="true"
                                   RequiredError="Укажите идентификационный номер"
                                   FullWidth="true"
-                                  Variant="Variant.Outlined"/>
+                                  Variant="Variant.Outlined" /> *@
 
-                    <!-- Кнопка проверки клиента -->
+                    <!-- Поле email -->
+                    <MudTextField @bind-Value="_model.Email"
+                                  Placeholder="Email"
+                                  Required="true"
+                                  RequiredError="Укажите email"
+                                  InputType="InputType.Email"
+                                  FullWidth="true"
+                                  Variant="Variant.Outlined"
+                                  ErrorText="@_emailError"
+                                  Error="@(!string.IsNullOrEmpty(_emailError))" />
+
+                    <!-- Поле пароля -->
+                    <MudTextField @bind-Value="_model.Password"
+                                  Placeholder="Пароль"
+                                  InputType="@_passwordInput"
+                                  Required="true"
+                                  RequiredError="Укажите пароль"
+                                  FullWidth="true"
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@(_showPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                  OnAdornmentClick="TogglePasswordVisibility"
+                                  ErrorText="@_passwordError"
+                                  Error="@(!string.IsNullOrEmpty(_passwordError))" />
+
+                    <!-- Поле подтверждения пароля -->
+                    <MudTextField @bind-Value="_model.ConfirmPassword"
+                                  Placeholder="Подтвердите пароль"
+                                  InputType="@_confirmPasswordInput"
+                                  Required="true"
+                                  RequiredError="Подтвердите пароль"
+                                  FullWidth="true"
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@(_showConfirmPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                  OnAdornmentClick="ToggleConfirmPasswordVisibility"
+                                  ErrorText="@_confirmPasswordError"
+                                  Error="@(!string.IsNullOrEmpty(_confirmPasswordError))" />
+
+                    <!-- Кнопка регистрации -->
                     <MudButton ButtonType="ButtonType.Submit"
-                               Variant="Variant.Outlined"
+                               Variant="Variant.Filled"
                                FullWidth="true"
                                Size="Size.Large"
-                               StartIcon="@Icons.Material.Filled.Search"
+                               StartIcon="@(_isLoading ? null : Icons.Material.Filled.PersonAdd)"
                                Color="Color.Primary"
-                               Class="mt-2">
-                        Проверить клиента
+                               Class="mt-2"
+                               Disabled="@_isLoading">
+                        @if (_isLoading)
+                        {
+                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                            <span class="ms-2">Регистрация...</span>
+                        }
+                        else
+                        {
+                            <span>Зарегистрироваться</span>
+                        }
                     </MudButton>
                 </MudStack>
             </EditForm>
@@ -46,15 +103,101 @@
 
 @code {
     private RegisterModel _model = new();
+    private bool _showPassword = false;
+    private bool _showConfirmPassword = false;
+    private InputType _passwordInput = InputType.Password;
+    private InputType _confirmPasswordInput = InputType.Password;
+    private bool _isLoading = false;
+    private string _emailError = string.Empty;
+    private string _passwordError = string.Empty;
+    private string _confirmPasswordError = string.Empty;
 
-    private void HandleCheckClient()
+    private void TogglePasswordVisibility()
     {
-        // Логика проверки клиента по идентификационному номеру
-        // После успешной проверки можно показать дополнительные поля для регистрации
+        _showPassword = !_showPassword;
+        _passwordInput = _showPassword ? InputType.Text : InputType.Password;
+    }
+
+    private void ToggleConfirmPasswordVisibility()
+    {
+        _showConfirmPassword = !_showConfirmPassword;
+        _confirmPasswordInput = _showConfirmPassword ? InputType.Text : InputType.Password;
+    }
+
+    private async Task HandleRegister()
+    {
+        _emailError = string.Empty;
+        _passwordError = string.Empty;
+        _confirmPasswordError = string.Empty;
+
+        // Валидация паролей
+        if (_model.Password != _model.ConfirmPassword)
+        {
+            _confirmPasswordError = "Пароли не совпадают";
+            return;
+        }
+
+        if (_model.Password.Length < 6)
+        {
+            _passwordError = "Пароль должен содержать минимум 6 символов";
+            return;
+        }
+
+        _isLoading = true;
+
+        try
+        {
+            var request = new RegisterRequest
+            {
+                Email = _model.Email.Trim(),
+                Password = _model.Password
+            };
+
+            var result = await AuthService.RegisterAsync(request);
+
+            if (result.IsSuccess && result.Data != null)
+            {
+                await TokenService.SaveTokensAsync(result.Data);
+                
+                Snackbar.Add("Регистрация успешна! Вы автоматически вошли в систему.", Severity.Success);
+                
+                await Task.Delay(1500);
+                Navigation.NavigateTo("/login");
+            }
+            else
+            {
+                if (result.StatusCode == System.Net.HttpStatusCode.Conflict)
+                {
+                    _emailError = "Пользователь с таким email уже существует";
+                    Snackbar.Add("Пользователь с таким email уже зарегистрирован", Severity.Warning);
+                }
+                else
+                {
+                    Snackbar.Add(result.ErrorMessage ?? "Ошибка при регистрации", Severity.Error);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Неожиданная ошибка: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
     }
 
     public class RegisterModel
     {
-        public string IdentificationNumber { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Email обязателен")]
+        [EmailAddress(ErrorMessage = "Некорректный формат email")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Пароль обязателен")]
+        [MinLength(6, ErrorMessage = "Пароль должен содержать минимум 6 символов")]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Подтверждение пароля обязательно")]
+        public string ConfirmPassword { get; set; } = string.Empty;
     }
 }

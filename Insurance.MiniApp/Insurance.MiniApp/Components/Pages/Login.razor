@@ -1,4 +1,11 @@
 @page "/login"
+@using Insurance.Domain.Models
+@using Insurance.MiniApp.Services
+@using Microsoft.AspNetCore.Components
+@inject IAuthService AuthService
+@inject ITokenService TokenService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
 
 @rendermode InteractiveServer
 
@@ -37,13 +44,22 @@
 
                     <!-- Кнопка входа -->
                     <MudButton ButtonType="ButtonType.Submit"
-                               Variant="Variant.Outlined"
+                               Variant="Variant.Filled"
                                FullWidth="true"
                                Size="Size.Large"
-                               StartIcon="@Icons.Material.Filled.Login"
+                               StartIcon="@(_isLoading ? null : Icons.Material.Filled.Login)"
                                Color="Color.Primary"
-                               Class="mt-2">
-                        Войти
+                               Class="mt-2"
+                               Disabled="@_isLoading">
+                        @if (_isLoading)
+                        {
+                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                            <span class="ms-2">Вход...</span>
+                        }
+                        else
+                        {
+                            <span>Войти</span>
+                        }
                     </MudButton>
                 </MudStack>
             </EditForm>
@@ -68,6 +84,7 @@
     private LoginModel _model = new();
     private bool _showPassword = false;
     private InputType _passwordInput = InputType.Password;
+    private bool _isLoading = false;
 
     private void TogglePasswordVisibility()
     {
@@ -75,9 +92,43 @@
         _passwordInput = _showPassword ? InputType.Text : InputType.Password;
     }
 
-    private void HandleValidSubmit()
+    private async Task HandleValidSubmit()
     {
-        // Логика входа
+        _isLoading = true;
+
+        try
+        {
+            var request = new LoginRequest
+            {
+                Email = _model.Login.Trim(),
+                Password = _model.Password
+            };
+
+            var result = await AuthService.LoginAsync(request);
+
+            if (result.IsSuccess && result.Data != null)
+            {
+                // Сохраняем токены в cookies
+                await TokenService.SaveTokensAsync(result.Data);
+                
+                Snackbar.Add("Вход выполнен успешно!", Severity.Success);
+                
+                await Task.Delay(1000);
+                Navigation.NavigateTo("/profile");
+            }
+            else
+            {
+                Snackbar.Add(result.ErrorMessage ?? "Ошибка при входе", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Неожиданная ошибка: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
     }
 
     public class LoginModel
