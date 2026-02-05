@@ -102,6 +102,7 @@
 </MudContainer>
 
 @code {
+
     private RegisterModel _model = new();
     private bool _showPassword = false;
     private bool _showConfirmPassword = false;
@@ -158,9 +159,9 @@
             if (result.IsSuccess && result.Data != null)
             {
                 await TokenService.SaveTokensAsync(result.Data);
-                
+
                 Snackbar.Add("Регистрация успешна! Вы автоматически вошли в систему.", Severity.Success);
-                
+
                 await Task.Delay(1500);
                 Navigation.NavigateTo("/login");
             }
@@ -170,6 +171,7 @@
                 {
                     _emailError = "Пользователь с таким email уже существует";
                     Snackbar.Add("Пользователь с таким email уже зарегистрирован", Severity.Warning);
+                    StateHasChanged();
                 }
                 else
                 {
