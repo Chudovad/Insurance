@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Components
 @implements IDisposable
 @inject ITokenService TokenService
+@inject IAuthService AuthService
 @inject NavigationManager Navigation
 
 @rendermode InteractiveServer
@@ -101,7 +102,7 @@
 
     private async Task LoadAuthState()
     {
-        _isAuthenticated = await TokenService.IsAuthenticatedAsync();
+        _isAuthenticated = await AuthService.IsAuthenticatedAsync();
         if (_isAuthenticated)
         {
             _userEmail = await TokenService.GetUserEmailAsync();

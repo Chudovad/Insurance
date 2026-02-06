@@ -1,5 +1,6 @@
 using Insurance.MiniApp.Components;
 using Insurance.MiniApp.Services;
+using Insurance.MiniApp.Services.Http;
 using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,13 +10,22 @@ builder.AddServiceDefaults();
 // Add MudBlazor services
 builder.Services.AddMudServices();
 
-// Add HttpClient for API calls
-builder.Services.AddHttpClient("ApiClient", client =>
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7183";
+
+// AuthApiClient — для login/register/refresh (без handler, разрывает циклическую зависимость)
+builder.Services.AddHttpClient("AuthApiClient", client =>
 {
-    var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7183";
     client.BaseAddress = new Uri(apiBaseUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
+
+// ApiClient — для авторизованных запросов (handler добавляет Bearer и обновляет токен)
+builder.Services.AddHttpClient("ApiClient", client =>
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+})
+.AddHttpMessageHandler<AuthenticatedHttpClientHandler>();
 
 // Add HttpContextAccessor for cookie access
 builder.Services.AddHttpContextAccessor();
@@ -23,6 +33,7 @@ builder.Services.AddHttpContextAccessor();
 // Add services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<AuthenticatedHttpClientHandler>();
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()

@@ -1,5 +1,6 @@
 using Insurance.Domain.Models;
 using Microsoft.JSInterop;
+using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
@@ -19,7 +20,7 @@ public class TokenService(IHttpContextAccessor httpContextAccessor, IWebHostEnvi
     public async Task SaveTokensAsync(AuthResponse authResponse)
     {
         var secure = !_environment.IsDevelopment();
-        var sameSite = "Strict";
+        var sameSite = "Lax";
 
         // Сохраняем Access Token (срок действия до истечения токена)
         var accessTokenExpires = authResponse.AccessTokenExpiresAt.ToUniversalTime();
@@ -56,13 +57,13 @@ public class TokenService(IHttpContextAccessor httpContextAccessor, IWebHostEnvi
 
     public async Task<AuthResponse?> GetTokensAsync()
     {
-        // Пытаемся получить из cookies через HttpContext (для серверной части)
-        var httpContext = _httpContextAccessor.HttpContext;
         string? accessToken = null;
         string? refreshToken = null;
         string? accessTokenExpiresStr = null;
         string? refreshTokenExpiresStr = null;
 
+        // 1. Пытаемся получить из HttpContext (доступен при SSR/prerendering)
+        var httpContext = _httpContextAccessor.HttpContext;
         if (httpContext != null)
         {
             accessToken = httpContext.Request.Cookies[AccessTokenCookieName];
@@ -71,44 +72,59 @@ public class TokenService(IHttpContextAccessor httpContextAccessor, IWebHostEnvi
             refreshTokenExpiresStr = httpContext.Request.Cookies[RefreshTokenExpiresCookieName];
         }
 
-        // Если не найдено в HttpContext, пытаемся получить через JavaScript (для клиентской части)
-        if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+        // 2. Для значений, не найденных в HttpContext, пробуем JS Interop (интерактивный режим)
+        try
         {
-            try
-            {
+            if (string.IsNullOrEmpty(accessToken))
                 accessToken = await _jsRuntime.InvokeAsync<string?>("cookieHelper.getCookie", AccessTokenCookieName);
+
+            if (string.IsNullOrEmpty(refreshToken))
                 refreshToken = await _jsRuntime.InvokeAsync<string?>("cookieHelper.getCookie", RefreshTokenCookieName);
+
+            if (string.IsNullOrEmpty(accessTokenExpiresStr))
                 accessTokenExpiresStr = await _jsRuntime.InvokeAsync<string?>("cookieHelper.getCookie", AccessTokenExpiresCookieName);
+
+            if (string.IsNullOrEmpty(refreshTokenExpiresStr))
                 refreshTokenExpiresStr = await _jsRuntime.InvokeAsync<string?>("cookieHelper.getCookie", RefreshTokenExpiresCookieName);
-            }
-            catch
-            {
-                // Игнорируем ошибки JS Interop
-            }
+        }
+        catch
+        {
+            // JS Interop недоступен (например, при prerendering)
         }
 
-        if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+        // 3. Если оба токена отсутствуют — пользователь не авторизован
+        if (string.IsNullOrEmpty(accessToken) && string.IsNullOrEmpty(refreshToken))
             return null;
 
-        var authResponse = new AuthResponse
-        {
-            AccessToken = accessToken,
-            RefreshToken = refreshToken,
-            AccessTokenExpiresAt = DateTime.TryParse(accessTokenExpiresStr, out var accessExpires)
-                ? accessExpires
-                : DateTime.UtcNow.AddMinutes(30),
-            RefreshTokenExpiresAt = DateTime.TryParse(refreshTokenExpiresStr, out var refreshExpires)
-                ? refreshExpires
-                : DateTime.UtcNow.AddDays(7)
-        };
+        // 4. Парсим даты с RoundtripKind (формат "O" — ISO 8601)
+        //    Если дату распарсить не удалось — считаем токен просроченным (DateTime.MinValue)
+        var accessTokenExpiresAt = DateTime.TryParse(
+                accessTokenExpiresStr, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var accessExpires)
+            ? accessExpires.ToUniversalTime()
+            : DateTime.MinValue;
 
-        return authResponse;
+        var refreshTokenExpiresAt = DateTime.TryParse(
+                refreshTokenExpiresStr, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var refreshExpires)
+            ? refreshExpires.ToUniversalTime()
+            : DateTime.MinValue;
+
+        // 5. Если refresh-токен просрочен и access-токена нет — сессия недействительна
+        if (refreshTokenExpiresAt <= DateTime.UtcNow && string.IsNullOrEmpty(accessToken))
+            return null;
+
+        return new AuthResponse
+        {
+            AccessToken = accessToken ?? string.Empty,
+            RefreshToken = refreshToken ?? string.Empty,
+            AccessTokenExpiresAt = accessTokenExpiresAt,
+            RefreshTokenExpiresAt = refreshTokenExpiresAt
+        };
     }
 
     public async Task ClearTokensAsync()
     {
         var secure = !_environment.IsDevelopment();
-        var sameSite = "Strict";
+        var sameSite = "Lax";
 
         await _jsRuntime.InvokeVoidAsync("cookieHelper.deleteCookie", AccessTokenCookieName, secure, sameSite);
         await _jsRuntime.InvokeVoidAsync("cookieHelper.deleteCookie", RefreshTokenCookieName, secure, sameSite);
@@ -118,41 +134,11 @@ public class TokenService(IHttpContextAccessor httpContextAccessor, IWebHostEnvi
 
     public async Task<bool> IsAuthenticatedAsync()
     {
-        string? accessToken = null;
-        string? accessTokenExpiresStr = null;
-
-        // Пытаемся получить из HttpContext
-        var httpContext = _httpContextAccessor.HttpContext;
-        if (httpContext != null)
-        {
-            accessToken = httpContext.Request.Cookies[AccessTokenCookieName];
-            accessTokenExpiresStr = httpContext.Request.Cookies[AccessTokenExpiresCookieName];
-        }
-
-        // Если не найдено, пытаемся получить через JavaScript
-        if (string.IsNullOrEmpty(accessToken))
-        {
-            try
-            {
-                accessToken = await _jsRuntime.InvokeAsync<string?>("cookieHelper.getCookie", AccessTokenCookieName);
-                accessTokenExpiresStr = await _jsRuntime.InvokeAsync<string?>("cookieHelper.getCookie", AccessTokenExpiresCookieName);
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        if (string.IsNullOrEmpty(accessToken))
+        var tokens = await GetTokensAsync();
+        if (tokens == null || string.IsNullOrEmpty(tokens.AccessToken))
             return false;
 
-        // Проверяем, не истек ли токен
-        if (DateTime.TryParse(accessTokenExpiresStr, out var expires))
-        {
-            return expires > DateTime.UtcNow;
-        }
-
-        return true;
+        return tokens.AccessTokenExpiresAt > DateTime.UtcNow;
     }
 
     public async Task<string?> GetUserEmailAsync()
@@ -165,12 +151,12 @@ public class TokenService(IHttpContextAccessor httpContextAccessor, IWebHostEnvi
         {
             var handler = new JwtSecurityTokenHandler();
             var jsonToken = handler.ReadJwtToken(tokens.AccessToken);
-            
+
             // Пытаемся получить email из различных claims
-            var email = jsonToken.Claims.FirstOrDefault(c => c.Type == "email" || 
+            var email = jsonToken.Claims.FirstOrDefault(c => c.Type == "email" ||
                                                              c.Type == ClaimTypes.Email ||
                                                              c.Type == JwtRegisteredClaimNames.Email)?.Value;
-            
+
             return email;
         }
         catch
