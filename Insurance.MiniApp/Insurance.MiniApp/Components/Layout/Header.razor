@@ -15,34 +15,76 @@
             </MudText>
         </MudLink>
         <MudSpacer />
-        
+
+        @* Десктопная навигация — скрыта на xs/sm *@
+        <div class="d-none d-md-flex align-center">
+            @if (_isAuthenticated)
+            {
+                <MudText Typo="Typo.body1" Class="mr-4" Style="color:#222222;">
+                    @_userEmail
+                </MudText>
+                <MudButton Href="/" Color="Color.Primary" Variant="Variant.Filled" Class="mr-2" StartIcon="@Icons.Material.Filled.Home">
+                    Главная
+                </MudButton>
+                <MudButton Href="/profile" Color="Color.Primary" Variant="Variant.Filled" Class="mr-2" StartIcon="@Icons.Material.Filled.AccountCircle">
+                    Профиль
+                </MudButton>
+                <MudButton OnClick="HandleLogout" Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Logout">
+                    Выйти
+                </MudButton>
+            }
+            else
+            {
+                <MudButton Href="/login" Color="Color.Primary" Variant="Variant.Filled">
+                    Войти
+                </MudButton>
+            }
+        </div>
+
+        @* Кнопка-гамбургер —  видна только на xs/sm *@
+        <MudIconButton Icon="@(_drawerOpen ? Icons.Material.Filled.Close : Icons.Material.Filled.Menu)"
+                       Color="Color.Inherit"
+                       Class="d-flex d-md-none"
+                       OnClick="ToggleDrawer" />
+    </MudContainer>
+</MudAppBar>
+
+@* Мобильный drawer сверху *@
+<MudDrawer @bind-Open="_drawerOpen"
+           Anchor="Anchor.Top"
+           Variant="@DrawerVariant.Temporary"
+           Elevation="2">
+    <MudNavMenu>
         @if (_isAuthenticated)
         {
-            <MudText Typo="Typo.body1" Class="mr-4" Style="color:#222222;">
+            <MudText Typo="Typo.body2" Class="px-4 pt-3 pb-1" Style="color:#666;">
                 @_userEmail
             </MudText>
-            <MudButton Href="/main" Color="Color.Primary" Variant="Variant.Filled" Class="mr-2" StartIcon="@Icons.Material.Filled.Home">
+            <MudDivider Class="my-1" />
+            <MudNavLink Href="/" Icon="@Icons.Material.Filled.Home" Match="NavLinkMatch.All" OnClick="CloseDrawer">
                 Главная
-            </MudButton>
-            <MudButton Href="/profile" Color="Color.Primary" Variant="Variant.Filled" Class="mr-2" StartIcon="@Icons.Material.Filled.AccountCircle">
+            </MudNavLink>
+            <MudNavLink Href="/profile" Icon="@Icons.Material.Filled.AccountCircle" Match="NavLinkMatch.All" OnClick="CloseDrawer">
                 Профиль
-            </MudButton>
-            <MudButton OnClick="HandleLogout" Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Logout">
+            </MudNavLink>
+            <MudDivider Class="my-1" />
+            <MudNavLink Icon="@Icons.Material.Filled.Logout" OnClick="HandleLogoutMobile">
                 Выйти
-            </MudButton>
+            </MudNavLink>
         }
         else
         {
-            <MudButton Href="/login" Color="Color.Primary" Variant="Variant.Filled">
+            <MudNavLink Href="/login" Icon="@Icons.Material.Filled.Login" OnClick="CloseDrawer">
                 Войти
-            </MudButton>
+            </MudNavLink>
         }
-    </MudContainer>
-</MudAppBar>
+    </MudNavMenu>
+</MudDrawer>
 
 @code {
     private bool _isAuthenticated = false;
     private string? _userEmail;
+    private bool _drawerOpen = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -53,6 +95,7 @@
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         await LoadAuthState();
+        _drawerOpen = false;
         StateHasChanged();
     }
 
@@ -69,12 +112,28 @@
         }
     }
 
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    private void CloseDrawer()
+    {
+        _drawerOpen = false;
+    }
+
     private async Task HandleLogout()
     {
         await TokenService.ClearTokensAsync();
         await LoadAuthState();
         StateHasChanged();
         Navigation.NavigateTo("/login");
+    }
+
+    private async Task HandleLogoutMobile()
+    {
+        _drawerOpen = false;
+        await HandleLogout();
     }
 
     public void Dispose()
