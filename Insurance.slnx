@@ -1,6 +1,8 @@
 <Solution>
   <Project Path="Insurance.API/Insurance.API.csproj" Id="36c1170c-067f-4033-bb4a-629db8dad0a9" />
+  <Project Path="Insurance.AppHost/Insurance.AppHost.csproj" Id="7aa71fd0-3469-4ac7-84c4-d403ca39ed08" />
   <Project Path="Insurance.Domain/Insurance.Domain.csproj" Id="8b4a3642-4e39-49d0-973d-bf029cf6a237" />
   <Project Path="Insurance.MiniApp/Insurance.MiniApp.Client/Insurance.MiniApp.Client.csproj" />
   <Project Path="Insurance.MiniApp/Insurance.MiniApp/Insurance.MiniApp.csproj" />
+  <Project Path="Insurance.ServiceDefaults/Insurance.ServiceDefaults.csproj" />
 </Solution>

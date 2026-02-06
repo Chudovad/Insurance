@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Insurance.Domain\Insurance.Domain.csproj" />
+    <ProjectReference Include="..\..\Insurance.ServiceDefaults\Insurance.ServiceDefaults.csproj" />
     <ProjectReference Include="..\Insurance.MiniApp.Client\Insurance.MiniApp.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.*" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.*" />

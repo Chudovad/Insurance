@@ -158,8 +158,6 @@
 
             if (result.IsSuccess && result.Data != null)
             {
-                await TokenService.SaveTokensAsync(result.Data);
-
                 Snackbar.Add("Регистрация успешна!", Severity.Success);
 
                 Navigation.NavigateTo("/login");
