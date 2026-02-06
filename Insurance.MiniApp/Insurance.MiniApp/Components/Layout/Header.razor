@@ -6,7 +6,7 @@
 
 @rendermode InteractiveServer
 
-<MudAppBar Elevation="1">
+<MudAppBar Elevation="1" Class="d-none d-md-flex">
     <MudContainer MaxWidth="MaxWidth.Large" Class="d-flex align-center px-0">
         <MudIcon Icon="@Icons.Material.Filled.VerifiedUser" Size="Size.Large" Style="color:#246bce;" />
         <MudLink Href="/" Underline="Underline.None" Class="ml-2">
@@ -15,76 +15,77 @@
             </MudText>
         </MudLink>
         <MudSpacer />
-
-        @* Десктопная навигация — скрыта на xs/sm *@
-        <div class="d-none d-md-flex align-center">
-            @if (_isAuthenticated)
-            {
-                <MudText Typo="Typo.body1" Class="mr-4" Style="color:#222222;">
-                    @_userEmail
-                </MudText>
-                <MudButton Href="/" Color="Color.Primary" Variant="Variant.Filled" Class="mr-2" StartIcon="@Icons.Material.Filled.Home">
-                    Главная
-                </MudButton>
-                <MudButton Href="/profile" Color="Color.Primary" Variant="Variant.Filled" Class="mr-2" StartIcon="@Icons.Material.Filled.AccountCircle">
-                    Профиль
-                </MudButton>
-                <MudButton OnClick="HandleLogout" Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Logout">
-                    Выйти
-                </MudButton>
-            }
-            else
-            {
-                <MudButton Href="/login" Color="Color.Primary" Variant="Variant.Filled">
-                    Войти
-                </MudButton>
-            }
-        </div>
-
-        @* Кнопка-гамбургер —  видна только на xs/sm *@
-        <MudIconButton Icon="@(_drawerOpen ? Icons.Material.Filled.Close : Icons.Material.Filled.Menu)"
-                       Color="Color.Inherit"
-                       Class="d-flex d-md-none"
-                       OnClick="ToggleDrawer" />
-    </MudContainer>
-</MudAppBar>
-
-@* Мобильный drawer сверху *@
-<MudDrawer @bind-Open="_drawerOpen"
-           Anchor="Anchor.Top"
-           Variant="@DrawerVariant.Temporary"
-           Elevation="2">
-    <MudNavMenu>
         @if (_isAuthenticated)
         {
-            <MudText Typo="Typo.body2" Class="px-4 pt-3 pb-1" Style="color:#666;">
+            <MudText Typo="Typo.body1" Class="mr-4" Style="color:#222222;">
                 @_userEmail
             </MudText>
-            <MudDivider Class="my-1" />
-            <MudNavLink Href="/" Icon="@Icons.Material.Filled.Home" Match="NavLinkMatch.All" OnClick="CloseDrawer">
+            <MudButton Href="/" Color="Color.Primary" Variant="Variant.Filled" Class="mr-2" StartIcon="@Icons.Material.Filled.Home">
                 Главная
-            </MudNavLink>
-            <MudNavLink Href="/profile" Icon="@Icons.Material.Filled.AccountCircle" Match="NavLinkMatch.All" OnClick="CloseDrawer">
+            </MudButton>
+            <MudButton Href="/profile" Color="Color.Primary" Variant="Variant.Filled" Class="mr-2" StartIcon="@Icons.Material.Filled.AccountCircle">
                 Профиль
-            </MudNavLink>
-            <MudDivider Class="my-1" />
-            <MudNavLink Icon="@Icons.Material.Filled.Logout" OnClick="HandleLogoutMobile">
+            </MudButton>
+            <MudButton OnClick="HandleLogout" Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Logout">
                 Выйти
-            </MudNavLink>
+            </MudButton>
         }
         else
         {
-            <MudNavLink Href="/login" Icon="@Icons.Material.Filled.Login" OnClick="CloseDrawer">
+            <MudButton Href="/login" Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Login">
                 Войти
-            </MudNavLink>
+            </MudButton>
         }
-    </MudNavMenu>
-</MudDrawer>
+    </MudContainer>
+</MudAppBar>
+
+<MudAppBar Bottom Fixed Elevation="3" Color="Color.Surface" Class="pt-2 rounded-pill border-solid border mud-border-inherit mobile-bottom-nav d-flex d-md-none">
+    <MudStack Row Justify="Justify.SpaceAround" AlignItems="AlignItems.Center" Style="width: 100%;">
+        @if (_isAuthenticated)
+        {
+            <MudStack Spacing="0" AlignItems="AlignItems.Center" Style="cursor: pointer;" @onclick="@(() => Navigation.NavigateTo("/"))">
+                <MudIcon Icon="@Icons.Material.Filled.Home"
+                         Color="@(GetNavItemColor("/", true))"
+                         Size="Size.Medium" />
+                <MudText Typo="Typo.caption" Color="@(GetNavItemColor("/", true))" Style="font-size: 0.7rem; margin-top: 2px;">
+                    Главная
+                </MudText>
+            </MudStack>
+
+            <MudStack Spacing="0" AlignItems="AlignItems.Center" Style="cursor: pointer;" @onclick="@(() => Navigation.NavigateTo("/profile"))">
+                <MudIcon Icon="@Icons.Material.Filled.Person"
+                         Color="@(GetNavItemColor("/profile", false))"
+                         Size="Size.Medium" />
+                <MudText Typo="Typo.caption" Color="@(GetNavItemColor("/profile", false))" Style="font-size: 0.7rem; margin-top: 2px;">
+                    Профиль
+                </MudText>
+            </MudStack>
+
+            <MudStack Spacing="0" AlignItems="AlignItems.Center" Style="cursor: pointer;" @onclick="HandleLogout">
+                <MudIcon Icon="@Icons.Material.Filled.Logout"
+                         Size="Size.Medium" />
+                <MudText Typo="Typo.caption" Style="font-size: 0.7rem; margin-top: 2px;">
+                    Выйти
+                </MudText>
+            </MudStack>
+        }
+        else
+        {
+            <MudStack Spacing="0" AlignItems="AlignItems.Center" Style="cursor: pointer;" @onclick="@(() => Navigation.NavigateTo("/login"))">
+                <MudIcon Icon="@Icons.Material.Filled.Login"
+                         Color="@(GetNavItemColor("/login", false))"
+                         Size="Size.Medium" />
+                <MudText Typo="Typo.caption" Color="@(GetNavItemColor("/login", false))" Style="font-size: 0.7rem; margin-top: 2px;">
+                    Войти
+                </MudText>
+            </MudStack>
+        }
+    </MudStack>
+</MudAppBar>
 
 @code {
     private bool _isAuthenticated = false;
     private string? _userEmail;
-    private bool _drawerOpen = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -95,7 +96,6 @@
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         await LoadAuthState();
-        _drawerOpen = false;
         StateHasChanged();
     }
 
@@ -112,16 +112,6 @@
         }
     }
 
-    private void ToggleDrawer()
-    {
-        _drawerOpen = !_drawerOpen;
-    }
-
-    private void CloseDrawer()
-    {
-        _drawerOpen = false;
-    }
-
     private async Task HandleLogout()
     {
         await TokenService.ClearTokensAsync();
@@ -130,10 +120,22 @@
         Navigation.NavigateTo("/login");
     }
 
-    private async Task HandleLogoutMobile()
+    private Color GetNavItemColor(string route, bool exactMatch)
     {
-        _drawerOpen = false;
-        await HandleLogout();
+        var currentUri = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var routePath = route.TrimStart('/');
+
+        bool isActive;
+        if (exactMatch)
+        {
+            isActive = currentUri == routePath || (string.IsNullOrEmpty(routePath) && string.IsNullOrEmpty(currentUri));
+        }
+        else
+        {
+            isActive = !string.IsNullOrEmpty(routePath) && currentUri.StartsWith(routePath, StringComparison.OrdinalIgnoreCase);
+        }
+
+        return isActive ? Color.Primary : Color.Default;
     }
 
     public void Dispose()
