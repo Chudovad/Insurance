@@ -3,9 +3,11 @@ using System.Net;
 
 namespace Insurance.MiniApp.Services;
 
-public class AuthService(IHttpClientFactory httpClientFactory) : IAuthService
+public class AuthService(IHttpClientFactory httpClientFactory, ITokenService tokenService) : IAuthService
 {
+    private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient("ApiClient");
+    private readonly ITokenService _tokenService = tokenService;
 
     public async Task<AuthResult<AuthResponse>> RegisterAsync(RegisterRequest request)
     {
@@ -115,6 +117,58 @@ public class AuthService(IHttpClientFactory httpClientFactory) : IAuthService
         catch (Exception ex)
         {
             return AuthResult<AuthResponse>.Failure($"Неожиданная ошибка: {ex.Message}");
+        }
+    }
+
+    public async Task<AuthResult<object>> ChangePasswordAsync(ChangePasswordRequest request)
+    {
+        try
+        {
+            // Получаем токен для авторизации
+            var tokens = await _tokenService.GetTokensAsync();
+            if (tokens == null || string.IsNullOrEmpty(tokens.AccessToken))
+            {
+                return AuthResult<object>.Failure("Требуется авторизация", HttpStatusCode.Unauthorized);
+            }
+
+            // Создаем новый HttpClient для этого запроса с токеном
+            var httpClient = _httpClientFactory.CreateClient("ApiClient");
+            httpClient.DefaultRequestHeaders.Authorization = 
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokens.AccessToken);
+
+            var response = await httpClient.PostAsJsonAsync("api/auth/change-password", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<object>();
+                return AuthResult<object>.Success(result!);
+            }
+
+            var errorMessage = await response.Content.ReadAsStringAsync();
+
+            return response.StatusCode switch
+            {
+                HttpStatusCode.Unauthorized => AuthResult<object>.Failure(
+                    "Неверный текущий пароль или требуется повторная авторизация",
+                    response.StatusCode),
+                HttpStatusCode.BadRequest => AuthResult<object>.Failure(
+                    errorMessage,
+                    response.StatusCode),
+                HttpStatusCode.NotFound => AuthResult<object>.Failure(
+                    "Пользователь не найден",
+                    response.StatusCode),
+                _ => AuthResult<object>.Failure(
+                    "Ошибка при изменении пароля. Попробуйте позже.",
+                    response.StatusCode)
+            };
+        }
+        catch (HttpRequestException ex)
+        {
+            return AuthResult<object>.Failure($"Ошибка подключения к серверу: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            return AuthResult<object>.Failure($"Неожиданная ошибка: {ex.Message}");
         }
     }
 }

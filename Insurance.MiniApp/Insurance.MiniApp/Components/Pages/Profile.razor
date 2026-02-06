@@ -1,8 +1,12 @@
 @page "/profile"
 @using Insurance.MiniApp.Services
+@using Insurance.Domain.Models
 @using Microsoft.AspNetCore.Components
+@using System.ComponentModel.DataAnnotations
 @inject ITokenService TokenService
+@inject IAuthService AuthService
 @inject NavigationManager Navigation
+@inject ISnackbar Snackbar
 
 @rendermode InteractiveServer
 
@@ -39,6 +43,32 @@
                                         <MudSkeleton SkeletonType="SkeletonType.Text" Width="60%" Height="20px" />
                                         <MudSkeleton SkeletonType="SkeletonType.Text" Width="90%" Height="20px" />
                                     }
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+            <MudTabPanel Text="Настройки учетной записи">
+                <MudGrid Spacing="3" Class="mt-4">
+                    <MudItem xs="12" md="6">
+                        <MudCard Elevation="2" Class="profile-card">
+                            <MudCardContent>
+                                <MudStack Spacing="2">
+                                    <MudSkeleton SkeletonType="SkeletonType.Text" Width="40%" Height="24px" />
+                                    <MudSkeleton SkeletonType="SkeletonType.Text" Width="100%" Height="40px" />
+                                    <MudSkeleton SkeletonType="SkeletonType.Text" Width="100%" Height="40px" />
+                                    <MudSkeleton SkeletonType="SkeletonType.Text" Width="100%" Height="40px" />
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudCard Elevation="2" Class="profile-card">
+                            <MudCardContent>
+                                <MudStack Spacing="2">
+                                    <MudSkeleton SkeletonType="SkeletonType.Text" Width="40%" Height="24px" />
+                                    <MudSkeleton SkeletonType="SkeletonType.Text" Width="60%" Height="40px" />
                                 </MudStack>
                             </MudCardContent>
                         </MudCard>
@@ -209,13 +239,88 @@ else
         </MudTabPanel>
 
         <MudTabPanel Text="Настройки учетной записи">
-            <MudCard Elevation="2" Class="profile-card mt-4">
-                <MudCardContent>
-                    <MudText Typo="Typo.body1" Style="color: #718096;">
-                        Настройки учетной записи будут здесь
-                    </MudText>
-                </MudCardContent>
-            </MudCard>
+            <MudGrid Spacing="3" Class="mt-4">
+                <!-- Левая колонка - Изменение пароля -->
+                <MudItem xs="12" md="6">
+                    <MudCard Elevation="2" Class="profile-card">
+                        <MudCardContent>
+                            <MudStack Row Spacing="2" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                                <MudText Typo="Typo.h6" Style="color: #2d3748; font-weight: 600; text-transform: uppercase;">
+                                    Изменение пароля
+                                </MudText>
+                                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Medium" Style="font-size: 36px;" />
+                            </MudStack>
+
+                            <EditForm Model="_changePasswordModel" OnValidSubmit="HandleChangePassword">
+                                <DataAnnotationsValidator />
+                                <MudStack Spacing="3">
+                                    <!-- Текущий пароль -->
+                                    <MudTextField @bind-Value="_changePasswordModel.CurrentPassword"
+                                                  Label="Текущий пароль"
+                                                  InputType="@_currentPasswordInput"
+                                                  Required="true"
+                                                  RequiredError="Введите текущий пароль"
+                                                  FullWidth="true"
+                                                  Variant="Variant.Outlined"
+                                                  Adornment="Adornment.End"
+                                                  AdornmentIcon="@(_showCurrentPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                                  OnAdornmentClick="ToggleCurrentPasswordVisibility"
+                                                  ErrorText="@_currentPasswordError"
+                                                  Error="@(!string.IsNullOrEmpty(_currentPasswordError))" />
+
+                                    <!-- Новый пароль -->
+                                    <MudTextField @bind-Value="_changePasswordModel.NewPassword"
+                                                  Label="Новый пароль"
+                                                  InputType="@_newPasswordInput"
+                                                  Required="true"
+                                                  RequiredError="Введите новый пароль"
+                                                  FullWidth="true"
+                                                  Variant="Variant.Outlined"
+                                                  Adornment="Adornment.End"
+                                                  AdornmentIcon="@(_showNewPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                                  OnAdornmentClick="ToggleNewPasswordVisibility"
+                                                  ErrorText="@_newPasswordError"
+                                                  Error="@(!string.IsNullOrEmpty(_newPasswordError))" />
+
+                                    <!-- Подтверждение нового пароля -->
+                                    <MudTextField @bind-Value="_changePasswordModel.ConfirmNewPassword"
+                                                  Label="Подтвердите новый пароль"
+                                                  InputType="@_confirmNewPasswordInput"
+                                                  Required="true"
+                                                  RequiredError="Подтвердите новый пароль"
+                                                  FullWidth="true"
+                                                  Variant="Variant.Outlined"
+                                                  Adornment="Adornment.End"
+                                                  AdornmentIcon="@(_showConfirmNewPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                                  OnAdornmentClick="ToggleConfirmNewPasswordVisibility"
+                                                  ErrorText="@_confirmNewPasswordError"
+                                                  Error="@(!string.IsNullOrEmpty(_confirmNewPasswordError))" />
+
+                                    <!-- Кнопка сохранения -->
+                                    <MudButton ButtonType="ButtonType.Submit"
+                                               Variant="Variant.Filled"
+                                               Color="Color.Primary"
+                                               FullWidth="true"
+                                               Size="Size.Large"
+                                               StartIcon="@(_isChangingPassword ? null : Icons.Material.Filled.Save)"
+                                               Disabled="@_isChangingPassword"
+                                               Class="mt-2">
+                                        @if (_isChangingPassword)
+                                        {
+                                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                                            <span class="ms-2">Сохранение...</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Изменить пароль</span>
+                                        }
+                                    </MudButton>
+                                </MudStack>
+                            </EditForm>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
         </MudTabPanel>
 
     </MudTabs>
@@ -223,6 +328,21 @@ else
 
 @code {
     private bool _isLoading = true;
+    private bool _isChangingPassword = false;
+    private string _userEmail = string.Empty;
+    private string _lastLoginTime = "Не определено";
+
+    // Поля для формы изменения пароля
+    private ChangePasswordModel _changePasswordModel = new();
+    private bool _showCurrentPassword = false;
+    private bool _showNewPassword = false;
+    private bool _showConfirmNewPassword = false;
+    private InputType _currentPasswordInput = InputType.Password;
+    private InputType _newPasswordInput = InputType.Password;
+    private InputType _confirmNewPasswordInput = InputType.Password;
+    private string _currentPasswordError = string.Empty;
+    private string _newPasswordError = string.Empty;
+    private string _confirmNewPasswordError = string.Empty;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -236,11 +356,137 @@ else
                 return;
             }
 
-            // Имитация загрузки данных
+            _userEmail = await TokenService.GetUserEmailAsync();
+
             await Task.Delay(800);
             _isLoading = false;
             StateHasChanged();
         }
+    }
+
+    private void ToggleCurrentPasswordVisibility()
+    {
+        _showCurrentPassword = !_showCurrentPassword;
+        _currentPasswordInput = _showCurrentPassword ? InputType.Text : InputType.Password;
+    }
+
+    private void ToggleNewPasswordVisibility()
+    {
+        _showNewPassword = !_showNewPassword;
+        _newPasswordInput = _showNewPassword ? InputType.Text : InputType.Password;
+    }
+
+    private void ToggleConfirmNewPasswordVisibility()
+    {
+        _showConfirmNewPassword = !_showConfirmNewPassword;
+        _confirmNewPasswordInput = _showConfirmNewPassword ? InputType.Text : InputType.Password;
+    }
+
+    private async Task HandleChangePassword()
+    {
+        _currentPasswordError = string.Empty;
+        _newPasswordError = string.Empty;
+        _confirmNewPasswordError = string.Empty;
+
+        // Валидация паролей
+        if (_changePasswordModel.NewPassword != _changePasswordModel.ConfirmNewPassword)
+        {
+            _confirmNewPasswordError = "Пароли не совпадают";
+            StateHasChanged();
+            return;
+        }
+
+        if (_changePasswordModel.NewPassword.Length < 6)
+        {
+            _newPasswordError = "Пароль должен содержать минимум 6 символов";
+            StateHasChanged();
+            return;
+        }
+
+        if (_changePasswordModel.CurrentPassword == _changePasswordModel.NewPassword)
+        {
+            _newPasswordError = "Новый пароль должен отличаться от текущего";
+            StateHasChanged();
+            return;
+        }
+
+        _isChangingPassword = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new ChangePasswordRequest
+            {
+                CurrentPassword = _changePasswordModel.CurrentPassword,
+                NewPassword = _changePasswordModel.NewPassword
+            };
+
+            var result = await AuthService.ChangePasswordAsync(request);
+
+            if (result.IsSuccess)
+            {
+                Snackbar.Add("Пароль успешно изменен", Severity.Success);
+                
+                // Очистка формы
+                _changePasswordModel = new ChangePasswordModel();
+                _currentPasswordInput = InputType.Password;
+                _newPasswordInput = InputType.Password;
+                _confirmNewPasswordInput = InputType.Password;
+                _showCurrentPassword = false;
+                _showNewPassword = false;
+                _showConfirmNewPassword = false;
+            }
+            else
+            {
+                // Обработка ошибок от API
+                if (result.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    _currentPasswordError = result.ErrorMessage ?? "Неверный текущий пароль";
+                }
+                else if (result.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    var errorMessage = result.ErrorMessage ?? "Ошибка валидации";
+                    if (errorMessage.Contains("минимум"))
+                    {
+                        _newPasswordError = errorMessage;
+                    }
+                    else if (errorMessage.Contains("отличаться"))
+                    {
+                        _newPasswordError = errorMessage;
+                    }
+                    else
+                    {
+                        _newPasswordError = errorMessage;
+                    }
+                }
+                else
+                {
+                    Snackbar.Add(result.ErrorMessage ?? "Ошибка при изменении пароля", Severity.Error);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Неожиданная ошибка: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isChangingPassword = false;
+            StateHasChanged();
+        }
+    }
+
+    public class ChangePasswordModel
+    {
+        [Required(ErrorMessage = "Текущий пароль обязателен")]
+        public string CurrentPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Новый пароль обязателен")]
+        [MinLength(6, ErrorMessage = "Пароль должен содержать минимум 6 символов")]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Подтверждение пароля обязательно")]
+        public string ConfirmNewPassword { get; set; } = string.Empty;
     }
 }
 

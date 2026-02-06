@@ -7,6 +7,7 @@ public interface IAuthService
     Task<AuthResult<AuthResponse>> RegisterAsync(RegisterRequest request);
     Task<AuthResult<AuthResponse>> LoginAsync(LoginRequest request);
     Task<AuthResult<AuthResponse>> RefreshTokenAsync(RefreshTokenRequest request);
+    Task<AuthResult<object>> ChangePasswordAsync(ChangePasswordRequest request);
 }
 
 public class AuthResult<T>

@@ -96,6 +96,53 @@ public class AuthController(IJwtService jwtService) : ControllerBase
         return Ok(new { Id = id, Email = email });
     }
 
+    [HttpPost("change-password")]
+    [Authorize]
+    public ActionResult ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword) || string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            return BadRequest("Текущий и новый пароль обязательны.");
+        }
+
+        if (request.NewPassword.Length < 6)
+        {
+            return BadRequest("Новый пароль должен содержать минимум 6 символов.");
+        }
+
+        if (request.CurrentPassword == request.NewPassword)
+        {
+            return BadRequest("Новый пароль должен отличаться от текущего.");
+        }
+
+        // Получаем email пользователя из токена
+        var email = User.FindFirstValue(ClaimTypes.Name) ?? User.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrEmpty(email))
+        {
+            return Unauthorized("Не удалось определить пользователя.");
+        }
+
+        // Находим пользователя
+        var user = Users.SingleOrDefault(u =>
+            u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+
+        if (user is null)
+        {
+            return NotFound("Пользователь не найден.");
+        }
+
+        // Проверяем текущий пароль
+        if (!VerifyPassword(request.CurrentPassword, user.PasswordHash))
+        {
+            return Unauthorized("Неверный текущий пароль.");
+        }
+
+        // Обновляем пароль
+        user.PasswordHash = HashPassword(request.NewPassword);
+
+        return Ok(new { Message = "Пароль успешно изменен." });
+    }
+
     private static string HashPassword(string password)
     {
         // Для примера: PBKDF2 + случайная "соль", сохранённая в начале строки.
