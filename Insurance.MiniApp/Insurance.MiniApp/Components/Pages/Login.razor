@@ -110,9 +110,7 @@
             {
                 // Сохраняем токены в cookies
                 await TokenService.SaveTokensAsync(result.Data);
-                
-                Snackbar.Add("Вход выполнен успешно!", Severity.Success);
-                
+
                 Navigation.NavigateTo("/profile");
             }
             else

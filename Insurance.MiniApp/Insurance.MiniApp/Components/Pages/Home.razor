@@ -106,7 +106,7 @@ else
     {
         if (firstRender)
         {
-            var isAuthenticated = await AuthService.IsAuthenticatedAsync();
+            var isAuthenticated = await TokenService.IsAuthenticatedAsync();
 
             if (!isAuthenticated)
             {

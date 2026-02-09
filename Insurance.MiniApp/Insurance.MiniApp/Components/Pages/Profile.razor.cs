@@ -8,6 +8,7 @@ namespace Insurance.MiniApp.Components.Pages
     {
         private bool _isLoading = true;
         private bool _isChangingPassword = false;
+        private string? _userEmail;
 
         // Поля для формы изменения пароля
         private ChangePasswordModel _changePasswordModel = new();
@@ -25,15 +26,17 @@ namespace Insurance.MiniApp.Components.Pages
         {
             if (firstRender)
             {
-                var isAuthenticated = await AuthService.IsAuthenticatedAsync();
+                var isAuthenticated = await TokenService.IsAuthenticatedAsync();
 
                 if (!isAuthenticated)
                 {
+                    _userEmail = null;
                     Navigation.NavigateTo("/login");
                     return;
                 }
 
                 await Task.Delay(800);
+                _userEmail = await TokenService.GetUserEmailAsync();
                 _isLoading = false;
                 StateHasChanged();
             }

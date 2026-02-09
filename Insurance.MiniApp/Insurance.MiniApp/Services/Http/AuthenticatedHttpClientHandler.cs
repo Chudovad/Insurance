@@ -1,4 +1,3 @@
-using Insurance.Domain.Models;
 using System.Net;
 using System.Net.Http.Headers;
 
@@ -6,28 +5,13 @@ namespace Insurance.MiniApp.Services.Http;
 
 /// <summary>
 /// DelegatingHandler, который:
-/// 1. Добавляет Bearer-токен к запросам
-/// 2. Проактивно обновляет access-токен за 30 секунд до истечения
-/// 3. Ретраит запрос один раз при получении 401
-/// 4. Защищён от параллельных refresh-запросов через SemaphoreSlim
+/// 1. Добавляет Bearer-токен к запросам (через TokenService.EnsureValidAccessTokenAsync)
+/// 2. Ретраит запрос один раз при получении 401 (через TokenService.ForceRefreshAsync)
+/// Вся логика refresh централизована в TokenService (единый SemaphoreSlim).
 /// </summary>
-public class AuthenticatedHttpClientHandler(
-    ITokenService tokenService,
-    IHttpClientFactory httpClientFactory) : DelegatingHandler
+public class AuthenticatedHttpClientHandler(ITokenService tokenService) : DelegatingHandler
 {
     private readonly ITokenService _tokenService = tokenService;
-    private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
-
-    /// <summary>
-    /// Буфер времени: обновляем токен за 30 секунд до фактического истечения,
-    /// чтобы избежать гонки между проверкой и отправкой запроса.
-    /// </summary>
-    private static readonly TimeSpan RefreshBuffer = TimeSpan.FromSeconds(30);
-
-    /// <summary>
-    /// Защита от параллельных вызовов refresh (static, т.к. handler может пересоздаваться).
-    /// </summary>
-    private static readonly SemaphoreSlim RefreshLock = new(1, 1);
 
     private static readonly string[] AuthEndpoints =
     [
@@ -40,14 +24,12 @@ public class AuthenticatedHttpClientHandler(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        // Не добавляем токен к эндпоинтам аутентификации
         if (IsAuthEndpoint(request))
         {
             return await base.SendAsync(request, cancellationToken);
         }
 
-        // Получаем валидный access-токен (с проактивным обновлением)
-        var accessToken = await GetValidAccessTokenAsync();
+        var accessToken = await _tokenService.EnsureValidAccessTokenAsync();
         if (!string.IsNullOrEmpty(accessToken))
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -55,10 +37,9 @@ public class AuthenticatedHttpClientHandler(
 
         var response = await base.SendAsync(request, cancellationToken);
 
-        // Если сервер вернул 401 — пробуем обновить токен и повторить запрос один раз
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        if (response.StatusCode == HttpStatusCode.Unauthorized && !string.IsNullOrEmpty(accessToken))
         {
-            var newAccessToken = await ForceRefreshAsync();
+            var newAccessToken = await _tokenService.ForceRefreshAsync();
             if (!string.IsNullOrEmpty(newAccessToken))
             {
                 var retryRequest = await CloneRequestAsync(request);
@@ -70,94 +51,6 @@ public class AuthenticatedHttpClientHandler(
         }
 
         return response;
-    }
-
-    /// <summary>
-    /// Возвращает валидный access-токен. Если токен скоро истечёт — обновляет.
-    /// </summary>
-    private async Task<string?> GetValidAccessTokenAsync()
-    {
-        var tokens = await _tokenService.GetTokensAsync();
-        if (tokens == null)
-            return null;
-
-        // Access-токен ещё действителен (с учётом буфера) — используем его
-        if (!string.IsNullOrEmpty(tokens.AccessToken) &&
-            tokens.AccessTokenExpiresAt > DateTime.UtcNow.Add(RefreshBuffer))
-        {
-            return tokens.AccessToken;
-        }
-
-        // Access-токен истёк или скоро истечёт — обновляем
-        if (!string.IsNullOrEmpty(tokens.RefreshToken) &&
-            tokens.RefreshTokenExpiresAt > DateTime.UtcNow)
-        {
-            return await RefreshAccessTokenAsync(tokens.RefreshToken);
-        }
-
-        // Refresh-токен тоже просрочен — очищаем
-        await _tokenService.ClearTokensAsync();
-        return null;
-    }
-
-    /// <summary>
-    /// Принудительное обновление токена (вызывается после получения 401).
-    /// </summary>
-    private async Task<string?> ForceRefreshAsync()
-    {
-        var tokens = await _tokenService.GetTokensAsync();
-        if (tokens == null ||
-            string.IsNullOrEmpty(tokens.RefreshToken) ||
-            tokens.RefreshTokenExpiresAt <= DateTime.UtcNow)
-        {
-            return null;
-        }
-
-        return await RefreshAccessTokenAsync(tokens.RefreshToken);
-    }
-
-    /// <summary>
-    /// Выполняет refresh через API. Защищён от параллельных вызовов.
-    /// После получения блокировки перепроверяет токен (double-check pattern),
-    /// чтобы не обновлять повторно, если другой поток уже обновил.
-    /// </summary>
-    private async Task<string?> RefreshAccessTokenAsync(string refreshToken)
-    {
-        await RefreshLock.WaitAsync();
-        try
-        {
-            // Double-check: возможно, другой запрос уже обновил токен
-            var currentTokens = await _tokenService.GetTokensAsync();
-            if (currentTokens != null &&
-                !string.IsNullOrEmpty(currentTokens.AccessToken) &&
-                currentTokens.AccessTokenExpiresAt > DateTime.UtcNow.Add(RefreshBuffer))
-            {
-                return currentTokens.AccessToken;
-            }
-
-            // Делаем refresh через "AuthApiClient" (без handler, без рекурсии)
-            var authClient = _httpClientFactory.CreateClient("AuthApiClient");
-            var response = await authClient.PostAsJsonAsync("api/auth/refresh",
-                new RefreshTokenRequest { RefreshToken = refreshToken });
-
-            if (response.IsSuccessStatusCode)
-            {
-                var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-                if (authResponse != null)
-                {
-                    await _tokenService.SaveTokensAsync(authResponse);
-                    return authResponse.AccessToken;
-                }
-            }
-
-            // Refresh не удался — очищаем токены
-            await _tokenService.ClearTokensAsync();
-            return null;
-        }
-        finally
-        {
-            RefreshLock.Release();
-        }
     }
 
     /// <summary>

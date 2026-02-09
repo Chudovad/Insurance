@@ -85,39 +85,66 @@
 </MudAppBar>
 
 @code {
+
     private bool _isAuthenticated = false;
     private string? _userEmail;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadAuthState();
+
         Navigation.LocationChanged += OnLocationChanged;
+        TokenService.AuthStateChanged += OnAuthStateChanged;
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadAuthState();
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Обновляет состояние авторизации при навигации.
+    /// </summary>
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        await LoadAuthState();
-        StateHasChanged();
+        await InvokeAsync(async () =>
+        {
+            await LoadAuthState();
+            StateHasChanged();
+        });
     }
 
+    /// <summary>
+    /// Обновляет состояние при изменении токенов (логин, логаут, refresh).
+    /// </summary>
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await LoadAuthState();
+            StateHasChanged();
+        });
+    }
+
+    /// <summary>
+    /// Загружает текущее состояние авторизации.
+    /// </summary>
     private async Task LoadAuthState()
     {
-        _isAuthenticated = await AuthService.IsAuthenticatedAsync();
-        if (_isAuthenticated)
-        {
-            _userEmail = await TokenService.GetUserEmailAsync();
-        }
-        else
-        {
-            _userEmail = null;
-        }
+        _isAuthenticated = await TokenService.IsAuthenticatedAsync();
+        _userEmail = _isAuthenticated ? await TokenService.GetUserEmailAsync() : null;
     }
 
     private async Task HandleLogout()
     {
+        _isAuthenticated = false;
+        _userEmail = null;
+
         await TokenService.ClearTokensAsync();
-        await LoadAuthState();
-        StateHasChanged();
         Navigation.NavigateTo("/login");
     }
 
@@ -142,5 +169,6 @@
     public void Dispose()
     {
         Navigation.LocationChanged -= OnLocationChanged;
+        TokenService.AuthStateChanged -= OnAuthStateChanged;
     }
 }

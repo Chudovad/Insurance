@@ -3,15 +3,9 @@ using System.Net;
 
 namespace Insurance.MiniApp.Services;
 
-public class AuthService(IHttpClientFactory httpClientFactory, ITokenService tokenService) : IAuthService
+public class AuthService(IHttpClientFactory httpClientFactory) : IAuthService
 {
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
-    private readonly ITokenService _tokenService = tokenService;
-
-    /// <summary>
-    /// Буфер времени для проактивного обновления (согласован с AuthenticatedHttpClientHandler).
-    /// </summary>
-    private static readonly TimeSpan RefreshBuffer = TimeSpan.FromSeconds(30);
 
     /// <summary>
     /// Клиент для auth-эндпоинтов (без AuthenticatedHttpClientHandler, избегаем циклическую зависимость).
@@ -22,54 +16,6 @@ public class AuthService(IHttpClientFactory httpClientFactory, ITokenService tok
     /// Клиент для авторизованных запросов (с AuthenticatedHttpClientHandler).
     /// </summary>
     private HttpClient ApiClient => _httpClientFactory.CreateClient("ApiClient");
-
-    public async Task<bool> IsAuthenticatedAsync()
-    {
-        await RefreshTokenIfNeededAsync();
-        return await _tokenService.IsAuthenticatedAsync();
-    }
-
-    /// <summary>
-    /// Проактивно обновляет access-токен, если он истёк (или скоро истечёт),
-    /// при условии что refresh-токен ещё действителен.
-    /// Используется для проверки авторизации на UI (не для API-запросов — те обрабатывает handler).
-    /// </summary>
-    private async Task RefreshTokenIfNeededAsync()
-    {
-        var tokens = await _tokenService.GetTokensAsync();
-        if (tokens == null || string.IsNullOrEmpty(tokens.RefreshToken))
-            return;
-
-        var needsRefresh = tokens.AccessTokenExpiresAt <= DateTime.UtcNow.Add(RefreshBuffer);
-        var canRefresh = tokens.RefreshTokenExpiresAt > DateTime.UtcNow;
-
-        if (!needsRefresh || !canRefresh)
-            return;
-
-        try
-        {
-            var authClient = _httpClientFactory.CreateClient("AuthApiClient");
-            var response = await authClient.PostAsJsonAsync("api/auth/refresh",
-                new RefreshTokenRequest { RefreshToken = tokens.RefreshToken });
-
-            if (response.IsSuccessStatusCode)
-            {
-                var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-                if (authResponse != null)
-                {
-                    await _tokenService.SaveTokensAsync(authResponse);
-                    return;
-                }
-            }
-
-            // Refresh не удался — очищаем токены
-            await _tokenService.ClearTokensAsync();
-        }
-        catch
-        {
-            // Ошибка сети — не очищаем токены, просто пропускаем
-        }
-    }
 
     public async Task<AuthResult<AuthResponse>> RegisterAsync(RegisterRequest request)
     {
@@ -186,9 +132,6 @@ public class AuthService(IHttpClientFactory httpClientFactory, ITokenService tok
     {
         try
         {
-            // ApiClient использует AuthenticatedHttpClientHandler,
-            // который автоматически добавляет Bearer-токен и обновляет его при необходимости.
-            // Ручная проверка токенов не нужна.
             var response = await ApiClient.PostAsJsonAsync("api/auth/change-password", request);
 
             if (response.IsSuccessStatusCode)
